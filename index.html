@@ -17,42 +17,52 @@ body {
   height: 100vh;
 }
 
-/* SIDEBAR */
+/* ================= SIDEBAR ================= */
 .sidebar {
-  width: 240px;
+  width: 320px;                 /* BIGGER PANEL */
   background: #111;
   color: #fff;
   padding: 20px;
 }
 
 .sidebar h2 {
-  font-size: 18px;
-  margin-bottom: 10px;
+  font-size: 20px;
+  margin-bottom: 12px;
 }
 
 .sidebar button {
   width: 100%;
   margin: 6px 0;
-  padding: 12px;
+  padding: 14px;
   background: #222;
   color: #fff;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
+  font-size: 16px;
 }
 
 .sidebar button:hover {
   background: #444;
 }
 
-/* MAIN */
+/* Wallet address */
+#account {
+  word-break: break-all;        /* ADDRESS WRAPS */
+  font-size: 13px;
+  line-height: 1.4;
+  margin-top: 8px;
+  color: #ccc;
+}
+
+/* ================= MAIN ================= */
 .main {
   flex: 1;
   padding: 20px;
   overflow-y: auto;
 }
 
-/* TOP BAR (MOBILE) */
+/* ================= TOP BAR (MOBILE) ================= */
 .topbar {
   display: none;
   background: #111;
@@ -67,16 +77,17 @@ body {
   cursor: pointer;
 }
 
+/* ================= CARDS ================= */
 .card {
   border: 1px solid #ccc;
   padding: 16px;
-  border-radius: 12px;
+  border-radius: 14px;
   margin-bottom: 20px;
   max-width: 520px;
 }
 
 input, button {
-  padding: 12px;
+  padding: 14px;
   margin: 6px 0;
   width: 100%;
   font-size: 16px;
@@ -86,7 +97,7 @@ input, button {
   display: none;
 }
 
-/* MOBILE */
+/* ================= MOBILE ================= */
 @media (max-width: 768px) {
   body {
     flex-direction: column;
@@ -95,6 +106,8 @@ input, button {
   .sidebar {
     position: fixed;
     height: 100%;
+    width: 85%;
+    max-width: 340px;
     z-index: 1000;
     transform: translateX(-100%);
     transition: transform 0.3s ease;
@@ -129,7 +142,7 @@ input, button {
   <h2>FreshChain</h2>
 
   <button onclick="connect()">🔌 Connect Wallet</button>
-  <p id="account" style="font-size:12px;">Not connected</p>
+  <p id="account">Not connected</p>
 
   <hr>
 
@@ -219,8 +232,6 @@ function toggleMenu() {
 function openPanel(id) {
   document.querySelectorAll(".card").forEach(c => c.classList.add("hidden"));
   document.getElementById(id).classList.remove("hidden");
-
-  // close menu on mobile
   document.getElementById("sidebar").classList.remove("show");
 }
 
