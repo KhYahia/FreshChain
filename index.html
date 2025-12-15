@@ -23,11 +23,6 @@ body {
   background: #111;
   color: #fff;
   padding: 20px;
-  transition: transform 0.3s ease;
-}
-
-.sidebar.hidden {
-  transform: translateX(-100%);
 }
 
 .sidebar h2 {
@@ -101,6 +96,12 @@ input, button {
     position: fixed;
     height: 100%;
     z-index: 1000;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+
+  .sidebar.show {
+    transform: translateX(0);
   }
 
   .topbar {
@@ -124,7 +125,7 @@ input, button {
 </div>
 
 <!-- SIDEBAR -->
-<div id="sidebar" class="sidebar hidden">
+<div id="sidebar" class="sidebar">
   <h2>FreshChain</h2>
 
   <button onclick="connect()">🔌 Connect Wallet</button>
@@ -212,13 +213,15 @@ let signer, contract;
 const account = document.getElementById("account");
 
 function toggleMenu() {
-  document.getElementById("sidebar").classList.toggle("hidden");
+  document.getElementById("sidebar").classList.toggle("show");
 }
 
 function openPanel(id) {
   document.querySelectorAll(".card").forEach(c => c.classList.add("hidden"));
   document.getElementById(id).classList.remove("hidden");
-  document.getElementById("sidebar").classList.add("hidden");
+
+  // close menu on mobile
+  document.getElementById("sidebar").classList.remove("show");
 }
 
 async function connect() {
@@ -264,7 +267,8 @@ async function markArrived(passed) {
 }
 
 function generateQR() {
-  const url = location.origin +
+  const url =
+    location.origin +
     location.pathname.replace("index.html","") +
     "scan.html?batchId=" + qrid.value;
 
@@ -274,6 +278,9 @@ function generateQR() {
 
   qrlink.innerText = url;
 }
+
+/* DEFAULT VIEW */
+openPanel('producer');
 </script>
 
 </body>
