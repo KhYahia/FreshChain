@@ -2,12 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>FreshChain – Management Dashboard</title>
+<title>FreshChain – Dashboard</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 
 <style>
+* { box-sizing: border-box; }
+
 body {
   margin: 0;
   font-family: Arial, sans-serif;
@@ -15,11 +17,17 @@ body {
   height: 100vh;
 }
 
+/* SIDEBAR */
 .sidebar {
   width: 240px;
   background: #111;
   color: #fff;
   padding: 20px;
+  transition: transform 0.3s ease;
+}
+
+.sidebar.hidden {
+  transform: translateX(-100%);
 }
 
 .sidebar h2 {
@@ -30,66 +38,111 @@ body {
 .sidebar button {
   width: 100%;
   margin: 6px 0;
-  padding: 10px;
+  padding: 12px;
   background: #222;
   color: #fff;
   border: none;
+  border-radius: 8px;
   cursor: pointer;
-  border-radius: 6px;
 }
 
 .sidebar button:hover {
   background: #444;
 }
 
+/* MAIN */
 .main {
   flex: 1;
-  padding: 24px;
+  padding: 20px;
   overflow-y: auto;
+}
+
+/* TOP BAR (MOBILE) */
+.topbar {
+  display: none;
+  background: #111;
+  color: #fff;
+  padding: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.menu-btn {
+  font-size: 22px;
+  cursor: pointer;
 }
 
 .card {
   border: 1px solid #ccc;
   padding: 16px;
-  border-radius: 10px;
+  border-radius: 12px;
   margin-bottom: 20px;
-  max-width: 500px;
+  max-width: 520px;
 }
 
 input, button {
-  padding: 8px;
-  margin: 4px 0;
+  padding: 12px;
+  margin: 6px 0;
   width: 100%;
+  font-size: 16px;
 }
 
 .hidden {
   display: none;
+}
+
+/* MOBILE */
+@media (max-width: 768px) {
+  body {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    position: fixed;
+    height: 100%;
+    z-index: 1000;
+  }
+
+  .topbar {
+    display: flex;
+  }
+
+  .main {
+    padding: 16px;
+  }
 }
 </style>
 </head>
 
 <body>
 
+<!-- MOBILE TOP BAR -->
+<div class="topbar">
+  <span class="menu-btn" onclick="toggleMenu()">☰</span>
+  <strong>FreshChain</strong>
+  <span></span>
+</div>
+
 <!-- SIDEBAR -->
-<div class="sidebar">
+<div id="sidebar" class="sidebar hidden">
   <h2>FreshChain</h2>
+
   <button onclick="connect()">🔌 Connect Wallet</button>
   <p id="account" style="font-size:12px;">Not connected</p>
 
   <hr>
 
-  <button onclick="show('admin')">Admin</button>
-  <button onclick="show('producer')">Producer</button>
-  <button onclick="show('transporter')">Transporter</button>
-  <button onclick="show('distributor')">Distributor</button>
-  <button onclick="show('retailer')">Retailer</button>
-  <button onclick="show('customer')">Customer</button>
+  <button onclick="openPanel('admin')">Admin</button>
+  <button onclick="openPanel('producer')">Producer</button>
+  <button onclick="openPanel('transporter')">Transporter</button>
+  <button onclick="openPanel('distributor')">Distributor</button>
+  <button onclick="openPanel('retailer')">Retailer</button>
+  <button onclick="openPanel('customer')">Customer</button>
 </div>
 
 <!-- MAIN -->
 <div class="main">
 
-  <!-- ADMIN -->
   <div id="admin" class="card hidden">
     <h3>Admin – Register Roles</h3>
     <input id="roleAddr" placeholder="0x address">
@@ -99,7 +152,6 @@ input, button {
     <button onclick="register('registerRetailer')">Register Retailer</button>
   </div>
 
-  <!-- PRODUCER -->
   <div id="producer" class="card hidden">
     <h3>Producer – Create Batch</h3>
     <input id="bid" placeholder="Batch ID">
@@ -108,7 +160,6 @@ input, button {
     <button onclick="createBatch()">Create Batch</button>
   </div>
 
-  <!-- TRANSPORTER -->
   <div id="transporter" class="card hidden">
     <h3>Transporter – Sensor Data</h3>
     <input id="sid" placeholder="Batch ID">
@@ -118,7 +169,6 @@ input, button {
     <button onclick="addSensor()">Add Sensor Data</button>
   </div>
 
-  <!-- DISTRIBUTOR -->
   <div id="distributor" class="card hidden">
     <h3>Distributor – Transfer Ownership</h3>
     <input id="tid" placeholder="Batch ID">
@@ -126,7 +176,6 @@ input, button {
     <button onclick="transferOwner()">Transfer Ownership</button>
   </div>
 
-  <!-- RETAILER -->
   <div id="retailer" class="card hidden">
     <h3>Retailer – Inspection</h3>
     <input id="rid" placeholder="Batch ID">
@@ -134,7 +183,6 @@ input, button {
     <button onclick="markArrived(false)">Mark Failed</button>
   </div>
 
-  <!-- CUSTOMER -->
   <div id="customer" class="card hidden">
     <h3>Customer – QR Code</h3>
     <input id="qrid" placeholder="Batch ID">
@@ -163,9 +211,14 @@ const ABI = [
 let signer, contract;
 const account = document.getElementById("account");
 
-function show(id) {
+function toggleMenu() {
+  document.getElementById("sidebar").classList.toggle("hidden");
+}
+
+function openPanel(id) {
   document.querySelectorAll(".card").forEach(c => c.classList.add("hidden"));
   document.getElementById(id).classList.remove("hidden");
+  document.getElementById("sidebar").classList.add("hidden");
 }
 
 async function connect() {
@@ -225,4 +278,3 @@ function generateQR() {
 
 </body>
 </html>
-
