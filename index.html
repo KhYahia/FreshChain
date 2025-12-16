@@ -17,17 +17,12 @@ body {
   height: 100vh;
 }
 
-/* ================= SIDEBAR ================= */
+/* SIDEBAR */
 .sidebar {
-  width: 320px;                 /* BIGGER PANEL */
+  width: 320px;
   background: #111;
   color: #fff;
   padding: 20px;
-}
-
-.sidebar h2 {
-  font-size: 20px;
-  margin-bottom: 12px;
 }
 
 .sidebar button {
@@ -39,50 +34,24 @@ body {
   border: none;
   border-radius: 10px;
   cursor: pointer;
-  font-size: 16px;
 }
 
-.sidebar button:hover {
-  background: #444;
-}
-
-/* Wallet address */
 #account {
-  word-break: break-all;        /* ADDRESS WRAPS */
+  word-break: break-all;
   font-size: 13px;
-  line-height: 1.4;
-  margin-top: 8px;
   color: #ccc;
 }
 
-/* ================= MAIN ================= */
+/* MAIN */
 .main {
   flex: 1;
   padding: 20px;
-  overflow-y: auto;
 }
 
-/* ================= TOP BAR (MOBILE) ================= */
-.topbar {
-  display: none;
-  background: #111;
-  color: #fff;
-  padding: 12px;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.menu-btn {
-  font-size: 22px;
-  cursor: pointer;
-}
-
-/* ================= CARDS ================= */
 .card {
   border: 1px solid #ccc;
   padding: 16px;
   border-radius: 14px;
-  margin-bottom: 20px;
   max-width: 520px;
 }
 
@@ -90,62 +59,24 @@ input, button {
   padding: 14px;
   margin: 6px 0;
   width: 100%;
-  font-size: 16px;
 }
 
-.hidden {
-  display: none;
-}
+.hidden { display: none; }
 
-/* ================= MOBILE ================= */
+/* MOBILE */
 @media (max-width: 768px) {
-  body {
-    flex-direction: column;
-  }
-
-  .sidebar {
-    position: fixed;
-    height: 100%;
-    width: 85%;
-    max-width: 340px;
-    z-index: 1000;
-    transform: translateX(-100%);
-    transition: transform 0.3s ease;
-  }
-
-  .sidebar.show {
-    transform: translateX(0);
-  }
-
-  .topbar {
-    display: flex;
-  }
-
-  .main {
-    padding: 16px;
-  }
+  body { flex-direction: column; }
 }
 </style>
 </head>
 
 <body>
 
-<!-- MOBILE TOP BAR -->
-<div class="topbar">
-  <span class="menu-btn" onclick="toggleMenu()">☰</span>
-  <strong>FreshChain</strong>
-  <span></span>
-</div>
-
-<!-- SIDEBAR -->
-<div id="sidebar" class="sidebar">
+<div class="sidebar">
   <h2>FreshChain</h2>
-
   <button onclick="connect()">🔌 Connect Wallet</button>
   <p id="account">Not connected</p>
-
   <hr>
-
   <button onclick="openPanel('admin')">Admin</button>
   <button onclick="openPanel('producer')">Producer</button>
   <button onclick="openPanel('transporter')">Transporter</button>
@@ -154,57 +85,69 @@ input, button {
   <button onclick="openPanel('customer')">Customer</button>
 </div>
 
-<!-- MAIN -->
 <div class="main">
 
-  <div id="admin" class="card hidden">
-    <h3>Admin – Register Roles</h3>
-    <input id="roleAddr" placeholder="0x address">
-    <button onclick="register('registerProducer')">Register Producer</button>
-    <button onclick="register('registerTransporter')">Register Transporter</button>
-    <button onclick="register('registerDistributor')">Register Distributor</button>
-    <button onclick="register('registerRetailer')">Register Retailer</button>
-  </div>
+<!-- ADMIN -->
+<div id="admin" class="card hidden">
+  <h3>Admin – Register Roles</h3>
 
-  <div id="producer" class="card hidden">
-    <h3>Producer – Create Batch</h3>
-    <input id="bid" placeholder="Batch ID">
-    <input id="pname" placeholder="Product name">
-    <input id="qty" placeholder="Quantity">
-    <button onclick="createBatch()">Create Batch</button>
-  </div>
+  <input id="producerAddr" placeholder="Producer address">
+  <button onclick="registerProducer()">Register Producer</button>
 
-  <div id="transporter" class="card hidden">
-    <h3>Transporter – Sensor Data</h3>
-    <input id="sid" placeholder="Batch ID">
-    <input id="temp" placeholder="Temperature">
-    <input id="hum" placeholder="Humidity">
-    <input id="loc" placeholder="Location">
-    <button onclick="addSensor()">Add Sensor Data</button>
-  </div>
+  <input id="transporterAddr" placeholder="Transporter address">
+  <button onclick="registerTransporter()">Register Transporter</button>
 
-  <div id="distributor" class="card hidden">
-    <h3>Distributor – Transfer Ownership</h3>
-    <input id="tid" placeholder="Batch ID">
-    <input id="newOwner" placeholder="New owner address">
-    <button onclick="transferOwner()">Transfer Ownership</button>
-  </div>
+  <input id="distributorAddr" placeholder="Distributor address">
+  <button onclick="registerDistributor()">Register Distributor</button>
 
-  <div id="retailer" class="card hidden">
-    <h3>Retailer – Inspection</h3>
-    <input id="rid" placeholder="Batch ID">
-    <button onclick="markArrived(true)">Mark Passed</button>
-    <button onclick="markArrived(false)">Mark Failed</button>
-  </div>
+  <input id="retailerAddr" placeholder="Retailer address">
+  <button onclick="registerRetailer()">Register Retailer</button>
+</div>
 
-  <div id="customer" class="card hidden">
-    <h3>Customer – QR Code</h3>
-    <input id="qrid" placeholder="Batch ID">
-    <button onclick="generateQR()">Generate QR</button>
-    <br><br>
-    <img id="qrimg">
-    <p id="qrlink"></p>
-  </div>
+<!-- PRODUCER -->
+<div id="producer" class="card hidden">
+  <h3>Producer – Create Batch</h3>
+  <input id="bid" placeholder="Batch ID">
+  <input id="pname" placeholder="Product name">
+  <input id="qty" placeholder="Quantity">
+  <button onclick="createBatch()">Create Batch</button>
+</div>
+
+<!-- TRANSPORTER -->
+<div id="transporter" class="card hidden">
+  <h3>Transporter – Sensor Data</h3>
+  <input id="sid" placeholder="Batch ID">
+  <input id="temp" placeholder="Temperature">
+  <input id="hum" placeholder="Humidity">
+  <input id="loc" placeholder="Location">
+  <button onclick="addSensor()">Add Sensor Data</button>
+</div>
+
+<!-- DISTRIBUTOR -->
+<div id="distributor" class="card hidden">
+  <h3>Distributor – Transfer Ownership</h3>
+  <input id="tid" placeholder="Batch ID">
+  <input id="newOwner" placeholder="New owner address">
+  <button onclick="transferOwner()">Transfer Ownership</button>
+</div>
+
+<!-- RETAILER -->
+<div id="retailer" class="card hidden">
+  <h3>Retailer – Inspection</h3>
+  <input id="rid" placeholder="Batch ID">
+  <button onclick="markArrived(true)">Mark Passed</button>
+  <button onclick="markArrived(false)">Mark Failed</button>
+</div>
+
+<!-- CUSTOMER -->
+<div id="customer" class="card hidden">
+  <h3>Customer – QR Code</h3>
+  <input id="qrid" placeholder="Batch ID">
+  <button onclick="generateQR()">Generate QR</button>
+  <br><br>
+  <img id="qrimg">
+  <p id="qrlink"></p>
+</div>
 
 </div>
 
@@ -225,21 +168,12 @@ const ABI = [
 let signer, contract;
 const account = document.getElementById("account");
 
-function toggleMenu() {
-  document.getElementById("sidebar").classList.toggle("show");
-}
-
 function openPanel(id) {
   document.querySelectorAll(".card").forEach(c => c.classList.add("hidden"));
   document.getElementById(id).classList.remove("hidden");
-  document.getElementById("sidebar").classList.remove("show");
 }
 
 async function connect() {
-  if (!window.ethereum) {
-    alert("MetaMask not found");
-    return;
-  }
   const provider = new ethers.providers.Web3Provider(window.ethereum);
   await provider.send("eth_requestAccounts", []);
   signer = provider.getSigner();
@@ -247,52 +181,50 @@ async function connect() {
   account.innerText = await signer.getAddress();
 }
 
-async function register(fn) {
-  const tx = await contract[fn](roleAddr.value);
-  await tx.wait();
-  alert("Role registered");
+/* ROLE REGISTRATION */
+async function registerProducer() {
+  const tx = await contract.registerProducer(producerAddr.value);
+  await tx.wait(); alert("Producer registered");
+}
+async function registerTransporter() {
+  const tx = await contract.registerTransporter(transporterAddr.value);
+  await tx.wait(); alert("Transporter registered");
+}
+async function registerDistributor() {
+  const tx = await contract.registerDistributor(distributorAddr.value);
+  await tx.wait(); alert("Distributor registered");
+}
+async function registerRetailer() {
+  const tx = await contract.registerRetailer(retailerAddr.value);
+  await tx.wait(); alert("Retailer registered");
 }
 
+/* OTHER ACTIONS */
 async function createBatch() {
   const tx = await contract.createBatch(bid.value, pname.value, qty.value);
-  await tx.wait();
-  alert("Batch created");
+  await tx.wait(); alert("Batch created");
 }
-
 async function addSensor() {
   const tx = await contract.addSensorData(sid.value, temp.value, hum.value, loc.value);
-  await tx.wait();
-  alert("Sensor data added");
+  await tx.wait(); alert("Sensor added");
 }
-
 async function transferOwner() {
   const tx = await contract.transferOwnership(tid.value, newOwner.value);
-  await tx.wait();
-  alert("Ownership transferred");
+  await tx.wait(); alert("Ownership transferred");
 }
-
 async function markArrived(passed) {
   const tx = await contract.markAsArrived(rid.value, passed);
-  await tx.wait();
-  alert("Inspection saved");
+  await tx.wait(); alert("Inspection saved");
 }
-
 function generateQR() {
-  const url =
-    location.origin +
-    location.pathname.replace("index.html","") +
-    "scan.html?batchId=" + qrid.value;
-
-  qrimg.src =
-    "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" +
-    encodeURIComponent(url);
-
+  const url = location.origin + "/scan.html?batchId=" + qrid.value;
+  qrimg.src = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + encodeURIComponent(url);
   qrlink.innerText = url;
 }
 
-/* DEFAULT VIEW */
-openPanel('producer');
+openPanel('admin');
 </script>
 
 </body>
 </html>
+
