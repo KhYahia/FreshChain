@@ -46,6 +46,7 @@ body {
 .main {
   flex: 1;
   padding: 20px;
+  overflow-y: auto;
 }
 
 .card {
@@ -53,6 +54,7 @@ body {
   padding: 16px;
   border-radius: 14px;
   max-width: 520px;
+  margin-bottom: 20px;
 }
 
 input, button {
@@ -63,10 +65,16 @@ input, button {
 
 .hidden { display: none; }
 
-/* MOBILE */
-@media (max-width: 768px) {
-  body { flex-direction: column; }
+/* STATUS */
+.status {
+  padding: 12px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+  font-size: 14px;
 }
+.status.info { background: #eef; }
+.status.success { background: #e6ffed; color: #056608; }
+.status.error { background: #ffe6e6; color: #8a0000; }
 </style>
 </head>
 
@@ -86,6 +94,8 @@ input, button {
 </div>
 
 <div class="main">
+
+<div id="status" class="status info">ℹ️ Ready</div>
 
 <!-- ADMIN -->
 <div id="admin" class="card hidden">
@@ -167,6 +177,12 @@ const ABI = [
 
 let signer, contract;
 const account = document.getElementById("account");
+const statusBox = document.getElementById("status");
+
+function setStatus(msg, type="info") {
+  statusBox.className = "status " + type;
+  statusBox.innerText = msg;
+}
 
 function openPanel(id) {
   document.querySelectorAll(".card").forEach(c => c.classList.add("hidden"));
@@ -174,57 +190,75 @@ function openPanel(id) {
 }
 
 async function connect() {
-  const provider = new ethers.providers.Web3Provider(window.ethereum);
-  await provider.send("eth_requestAccounts", []);
-  signer = provider.getSigner();
-  contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
-  account.innerText = await signer.getAddress();
+  try {
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    await provider.send("eth_requestAccounts", []);
+    signer = provider.getSigner();
+    contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+    account.innerText = await signer.getAddress();
+    setStatus("🟢 Wallet connected", "success");
+  } catch {
+    setStatus("🔴 Wallet connection failed", "error");
+  }
 }
 
-/* ROLE REGISTRATION */
+/* ADMIN */
 async function registerProducer() {
-  const tx = await contract.registerProducer(producerAddr.value);
-  await tx.wait(); alert("Producer registered");
+  await txWrap(contract.registerProducer(producerAddr.value), "Producer registered");
 }
 async function registerTransporter() {
-  const tx = await contract.registerTransporter(transporterAddr.value);
-  await tx.wait(); alert("Transporter registered");
+  await txWrap(contract.registerTransporter(transporterAddr.value), "Transporter registered");
 }
 async function registerDistributor() {
-  const tx = await contract.registerDistributor(distributorAddr.value);
-  await tx.wait(); alert("Distributor registered");
+  await txWrap(contract.registerDistributor(distributorAddr.value), "Distributor registered");
 }
 async function registerRetailer() {
-  const tx = await contract.registerRetailer(retailerAddr.value);
-  await tx.wait(); alert("Retailer registered");
+  await txWrap(contract.registerRetailer(retailerAddr.value), "Retailer registered");
 }
 
-/* OTHER ACTIONS */
+/* ACTIONS */
 async function createBatch() {
-  const tx = await contract.createBatch(bid.value, pname.value, qty.value);
-  await tx.wait(); alert("Batch created");
+  await txWrap(contract.createBatch(bid.value, pname.value, qty.value), "Batch created");
 }
 async function addSensor() {
-  const tx = await contract.addSensorData(sid.value, temp.value, hum.value, loc.value);
-  await tx.wait(); alert("Sensor added");
+  await txWrap(contract.addSensorData(sid.value, temp.value, hum.value, loc.value), "Sensor data added");
 }
 async function transferOwner() {
-  const tx = await contract.transferOwnership(tid.value, newOwner.value);
-  await tx.wait(); alert("Ownership transferred");
+  await txWrap(contract.transferOwnership(tid.value, newOwner.value), "Ownership transferred");
 }
 async function markArrived(passed) {
-  const tx = await contract.markAsArrived(rid.value, passed);
-  await tx.wait(); alert("Inspection saved");
+  await txWrap(contract.markAsArrived(rid.value, passed), "Inspection saved");
 }
+
+/* TRANSACTION HANDLER */
+async function txWrap(txPromise, successMsg) {
+  try {
+    setStatus("⏳ Transaction pending...", "info");
+    const tx = await txPromise;
+    await tx.wait();
+    setStatus("🟢 " + successMsg, "success");
+  } catch (e) {
+    setStatus("🔴 " + (e.reason || e.message), "error");
+  }
+}
+
+/* QR GENERATION — CORRECT FOR GITHUB PAGES */
 function generateQR() {
-  const url = location.origin + "/scan.html?batchId=" + qrid.value;
-  qrimg.src = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + encodeURIComponent(url);
+  const base =
+    location.origin +
+    location.pathname.replace("index.html", "");
+
+  const url = base + "scan.html?batchId=" + qrid.value;
+
+  qrimg.src =
+    "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" +
+    encodeURIComponent(url);
+
   qrlink.innerText = url;
 }
 
-openPanel('admin');
+openPanel("admin");
 </script>
 
 </body>
 </html>
-
