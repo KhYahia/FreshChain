@@ -10,7 +10,7 @@
 <style>
 body {
   font-family: Arial, sans-serif;
-  background: #f7f7f7;
+  background: #f6f6f6;
   margin: 0;
   padding: 20px;
 }
@@ -18,45 +18,36 @@ body {
 .container {
   max-width: 800px;
   margin: auto;
-  background: #fff;
-  padding: 20px;
+  background: #ffffff;
+  padding: 24px;
   border-radius: 14px;
 }
 
 .section {
-  margin-bottom: 20px;
+  margin-bottom: 22px;
 }
 
 .section h3 {
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .box {
-  background: #f3f3f3;
+  background: #f2f2f2;
   padding: 14px;
   border-radius: 10px;
   white-space: pre-wrap;
-}
-
-/* Status badges */
-.status-ok {
-  color: green;
-  font-weight: bold;
-}
-.status-bad {
-  color: red;
-  font-weight: bold;
+  font-size: 14px;
 }
 
 button {
-  padding: 14px;
   width: 100%;
+  padding: 14px;
   font-size: 16px;
   border: none;
   border-radius: 10px;
-  cursor: pointer;
   background: #222;
   color: #fff;
+  cursor: pointer;
 }
 
 button:hover {
@@ -78,7 +69,7 @@ button:hover {
 
   <div class="section">
     <h3>📦 Product Info</h3>
-    <div class="box" id="productInfo"></div>
+    <div class="box" id="productInfo">Loading...</div>
   </div>
 
   <div class="section">
@@ -105,7 +96,7 @@ button:hover {
 </div>
 
 <script>
-/* ===== CONFIG ===== */
+/* ================= CONFIG ================= */
 const CONTRACT_ADDRESS = "0xC7d8B75156Ac7fd509aD5eC360Bd0258A4459bfd";
 const RPC = "https://eth-sepolia.g.alchemy.com/v2/7nq9DSo1P4TvLc7p9bOfr";
 
@@ -113,47 +104,41 @@ const ABI = [
   "function getBatchHistory(uint256) view returns (uint256,string,uint256,address,address,address,address,bool,bool,(int256,int256,string,uint256,address)[],(address,address,uint256)[])"
 ];
 
+/* ================= LOAD ================= */
 const params = new URLSearchParams(window.location.search);
 const batchId = params.get("batchId");
 
 async function loadHistory() {
   if (!batchId) {
-    alert("No batchId provided in URL");
+    alert("❌ No batchId provided in URL");
     return;
   }
 
   const provider = new ethers.providers.JsonRpcProvider(RPC);
   const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
+
   const b = await contract.getBatchHistory(batchId);
 
-  /* Product */
+  /* ===== PRODUCT INFO ===== */
   productInfo.innerText =
 `Batch ID: ${b[0]}
 Product: ${b[1]}
 Quantity: ${b[2]}`;
 
-  /* Participants */
+  /* ===== PARTICIPANTS ===== */
   participants.innerText =
 `Producer: ${b[3]}
 Distributor: ${b[4]}
 Retailer: ${b[5]}
 Current Owner: ${b[6]}`;
 
-  /* STATUS (FIXED) */
-  const arrivedText = b[7]
-    ? "🟢 Arrived"
-    : "🔴 Not Arrived";
+  /* ===== STATUS (BULLETPROOF) ===== */
+  let statusText = "";
+  statusText += "Arrived: " + (b[7] ? "YES" : "NO") + "\n";
+  statusText += "Inspection Passed: " + (b[8] ? "YES" : "NO");
+  status.innerText = statusText;
 
-  const inspectionText = b[8]
-    ? "✅ Inspection Passed"
-    : "❌ Inspection Failed";
-
-  status.innerHTML =
-`<span class="${b[7] ? "status-ok" : "status-bad"}">${arrivedText}</span>
-<br>
-<span class="${b[8] ? "status-ok" : "status-bad"}">${inspectionText}</span>`;
-
-  /* Sensor Data */
+  /* ===== SENSOR DATA ===== */
   if (b[9].length === 0) {
     sensorData.innerText = "No sensor data recorded.";
   } else {
@@ -167,13 +152,17 @@ Transporter: ${s[4]}`
     ).join("\n\n");
   }
 
-  /* Ownership */
-  ownership.innerText = b[10].map((o, i) =>
+  /* ===== OWNERSHIP HISTORY ===== */
+  if (b[10].length === 0) {
+    ownership.innerText = "No ownership transfers.";
+  } else {
+    ownership.innerText = b[10].map((o, i) =>
 `Step ${i + 1}
 From: ${o[0]}
 To: ${o[1]}
 Time: ${new Date(Number(o[2]) * 1000).toLocaleString()}`
-  ).join("\n\n");
+    ).join("\n\n");
+  }
 }
 
 loadHistory();
