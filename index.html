@@ -8,33 +8,43 @@
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 
 <style>
-*{box-sizing:border-box}
-body{margin:0;font-family:Arial,sans-serif;display:flex;height:100vh}
-.sidebar{width:320px;background:#111;color:#fff;padding:20px}
-.sidebar button{width:100%;margin:6px 0;padding:14px;background:#222;color:#fff;border:none;border-radius:10px;cursor:pointer}
-#account{word-break:break-all;font-size:13px;color:#ccc}
-.badge{display:inline-block;padding:6px 10px;border-radius:999px;background:#222;font-size:12px;margin-top:8px}
-.main{flex:1;padding:20px;overflow-y:auto}
-.card{border:1px solid #ccc;padding:16px;border-radius:14px;max-width:700px;margin-bottom:20px}
-input,button{padding:14px;margin:6px 0;width:100%;font-size:16px}
-.hidden{display:none}
-.status{padding:12px;border-radius:10px;margin-bottom:16px;font-size:14px}
-.status.info{background:#eef}
-.status.success{background:#e6ffed;color:#056608}
-.status.error{background:#ffe6e6;color:#8a0000}
-.small{font-size:12px;color:#666}
-hr{border:none;border-top:1px solid #333;margin:12px 0}
+body { margin:0; font-family:Arial; display:flex; height:100vh; }
+.sidebar {
+  width:300px; background:#111; color:#fff; padding:20px;
+}
+.sidebar button {
+  width:100%; padding:12px; margin:6px 0;
+  border:none; border-radius:8px;
+  background:#222; color:#fff; cursor:pointer;
+}
+.sidebar button:hover { background:#444; }
+#account { font-size:13px; word-break:break-all; color:#ccc; }
+#role { margin-top:6px; color:#9ae6b4; }
+
+.main { flex:1; padding:20px; overflow:auto; }
+.card {
+  max-width:520px;
+  border:1px solid #ccc;
+  padding:16px;
+  border-radius:12px;
+  margin-bottom:20px;
+}
+input, button { width:100%; padding:12px; margin-top:8px; }
+.hidden { display:none; }
+
+.status { padding:12px; border-radius:8px; margin-bottom:12px; }
+.ok { background:#e6fffa; color:#065f46; }
+.err { background:#fee2e2; color:#7f1d1d; }
 </style>
 </head>
 
 <body>
 
-<!-- SIDEBAR -->
 <div class="sidebar">
   <h2>FreshChain</h2>
   <button onclick="connect()">🔌 Connect Wallet</button>
-  <p id="account">Not connected</p>
-  <div id="roleBadge" class="badge">Role: -</div>
+  <div id="account">Not connected</div>
+  <div id="role">Role: -</div>
   <hr>
   <button onclick="openPanel('admin')">Admin</button>
   <button onclick="openPanel('producer')">Producer</button>
@@ -44,182 +54,143 @@ hr{border:none;border-top:1px solid #333;margin:12px 0}
   <button onclick="openPanel('customer')">Customer</button>
 </div>
 
-<!-- MAIN -->
 <div class="main">
+  <div id="status"></div>
 
-<div id="status" class="status info">ℹ️ Ready</div>
+  <!-- ADMIN -->
+  <div id="admin" class="card hidden">
+    <h3>Admin – Register Roles</h3>
+    <input id="roleAddr" placeholder="0x address">
+    <button onclick="send(() => contract.registerProducer(roleAddr.value))">Register Producer</button>
+    <button onclick="send(() => contract.registerTransporter(roleAddr.value))">Register Transporter</button>
+    <button onclick="send(() => contract.registerDistributor(roleAddr.value))">Register Distributor</button>
+    <button onclick="send(() => contract.registerRetailer(roleAddr.value))">Register Retailer</button>
+  </div>
 
-<!-- LIST BATCHES -->
-<div class="card">
-  <h3>📦 Available Batches</h3>
-  <button onclick="loadBatches()">List Batches</button>
-  <div id="batchList" class="small">No data yet.</div>
-</div>
+  <!-- PRODUCER -->
+  <div id="producer" class="card hidden">
+    <h3>Producer – Create Batch</h3>
+    <input id="bid" placeholder="Batch ID">
+    <input id="pname" placeholder="Product Name">
+    <input id="qty" placeholder="Quantity">
+    <button onclick="send(() => contract.createBatch(bid.value, pname.value, qty.value))">
+      Create Batch
+    </button>
+  </div>
 
-<!-- ADMIN -->
-<div id="admin" class="card hidden">
-  <h3>Admin – Register Roles</h3>
-  <input id="producerAddr" placeholder="Producer address">
-  <button onclick="registerProducer()">Register Producer</button>
-  <input id="transporterAddr" placeholder="Transporter address">
-  <button onclick="registerTransporter()">Register Transporter</button>
-  <input id="distributorAddr" placeholder="Distributor address">
-  <button onclick="registerDistributor()">Register Distributor</button>
-  <input id="retailerAddr" placeholder="Retailer address">
-  <button onclick="registerRetailer()">Register Retailer</button>
-</div>
+  <!-- TRANSPORTER -->
+  <div id="transporter" class="card hidden">
+    <h3>Transporter – Add Sensor Data</h3>
+    <input id="sid" placeholder="Batch ID">
+    <input id="temp" placeholder="Temperature">
+    <input id="hum" placeholder="Humidity">
+    <input id="loc" placeholder="Location">
+    <button onclick="send(() => contract.addSensorData(sid.value, temp.value, hum.value, loc.value))">
+      Add Sensor Data
+    </button>
+  </div>
 
-<!-- PRODUCER -->
-<div id="producer" class="card hidden">
-  <h3>Producer – Create Batch</h3>
-  <input id="bid" placeholder="Batch ID">
-  <input id="pname" placeholder="Product name">
-  <input id="qty" placeholder="Quantity">
-  <button onclick="createBatch()">Create Batch</button>
-</div>
+  <!-- DISTRIBUTOR -->
+  <div id="distributor" class="card hidden">
+    <h3>Distributor – Transfer Ownership</h3>
+    <input id="tid" placeholder="Batch ID">
+    <input id="newOwner" placeholder="New Owner Address">
+    <button onclick="send(() => contract.transferOwnership(tid.value, newOwner.value))">
+      Transfer Ownership
+    </button>
+  </div>
 
-<!-- TRANSPORTER -->
-<div id="transporter" class="card hidden">
-  <h3>Transporter – Add Sensor Data</h3>
-  <input id="sid" placeholder="Batch ID">
-  <input id="temp" placeholder="Temperature">
-  <input id="hum" placeholder="Humidity">
-  <input id="loc" placeholder="Location">
-  <button onclick="addSensor()">Add Sensor Data</button>
-</div>
+  <!-- RETAILER -->
+  <div id="retailer" class="card hidden">
+    <h3>Retailer – Inspection</h3>
+    <input id="rid" placeholder="Batch ID">
+    <button onclick="send(() => contract.markAsArrived(rid.value, true))">
+      Mark Passed
+    </button>
+  </div>
 
-<!-- DISTRIBUTOR -->
-<div id="distributor" class="card hidden">
-  <h3>Distributor – Transfer Ownership</h3>
-  <input id="tid" placeholder="Batch ID">
-  <input id="newOwner" placeholder="New owner address">
-  <button onclick="transferOwner()">Transfer Ownership</button>
-</div>
-
-<!-- RETAILER -->
-<div id="retailer" class="card hidden">
-  <h3>Retailer – Inspection</h3>
-  <input id="rid" placeholder="Batch ID">
-  <button onclick="markArrived(true)">Mark Passed</button>
-  <button onclick="markArrived(false)">Mark Failed</button>
-</div>
-
-<!-- CUSTOMER (QR ONLY) -->
-<div id="customer" class="card hidden">
-  <h3>Customer – Verify Product</h3>
-  <input id="trackId" placeholder="TrackID (Batch ID)">
-  <button onclick="generateQR()">Generate QR</button>
-
-  <div id="customerBlock" class="hidden">
+  <!-- CUSTOMER -->
+  <div id="customer" class="card hidden">
+    <h3>Customer – QR Code</h3>
+    <input id="qrid" placeholder="Batch ID">
+    <button onclick="generateQR()">Generate QR</button>
+    <br><br>
     <img id="qrimg">
-    <p id="qrlink" class="small"></p>
+    <p id="qrlink"></p>
   </div>
 </div>
 
-</div>
-
 <script>
-/* CONFIG */
 const CONTRACT_ADDRESS = "0xC7d8B75156Ac7fd509aD5eC360Bd0258A4459bfd";
-const RPC = "https://eth-sepolia.g.alchemy.com/v2/7nq9DSo1P4TvLc7p9bOfr";
 
-/* ABI */
 const ABI = [
-  "function owner() view returns (address)",
-  "function isProducer(address) view returns (bool)",
-  "function isTransporter(address) view returns (bool)",
-  "function isDistributor(address) view returns (bool)",
-  "function isRetailer(address) view returns (bool)",
-  "function registerProducer(address)",
-  "function registerTransporter(address)",
-  "function registerDistributor(address)",
-  "function registerRetailer(address)",
-  "function createBatch(uint256,string,uint256)",
-  "function addSensorData(uint256,int256,int256,string)",
-  "function transferOwnership(uint256,address)",
-  "function markAsArrived(uint256,bool)",
-  "function listBatches() view returns (uint256[])"
+ "function registerProducer(address)",
+ "function registerTransporter(address)",
+ "function registerDistributor(address)",
+ "function registerRetailer(address)",
+ "function createBatch(uint256,string,uint256)",
+ "function addSensorData(uint256,int256,int256,string)",
+ "function transferOwnership(uint256,address)",
+ "function markAsArrived(uint256,bool)",
+ "function isProducer(address) view returns (bool)",
+ "function isTransporter(address) view returns (bool)",
+ "function isDistributor(address) view returns (bool)",
+ "function isRetailer(address) view returns (bool)",
+ "function owner() view returns (address)"
 ];
 
-let signer, contract;
+let signer, contract, user;
 
-function setStatus(msg,type="info"){
-  statusBox.className="status "+type;
-  statusBox.innerText=msg;
-}
-
-function openPanel(id){
-  document.querySelectorAll(".card").forEach(c=>{
-    if(c.id)c.classList.add("hidden");
-  });
+function openPanel(id) {
+  document.querySelectorAll(".card").forEach(c => c.classList.add("hidden"));
   document.getElementById(id).classList.remove("hidden");
 }
 
-async function connect(){
-  const provider=new ethers.providers.Web3Provider(window.ethereum);
-  await provider.send("eth_requestAccounts",[]);
-  signer=provider.getSigner();
-  contract=new ethers.Contract(CONTRACT_ADDRESS,ABI,signer);
-  const addr=await signer.getAddress();
-  account.innerText=addr;
-  setStatus("🟢 Wallet connected","success");
-  detectRole(addr);
+async function connect() {
+  const provider = new ethers.providers.Web3Provider(window.ethereum);
+  await provider.send("eth_requestAccounts", []);
+  signer = provider.getSigner();
+  user = await signer.getAddress();
+  contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+  account.innerText = user;
+  detectRole();
 }
 
-async function detectRole(addr){
-  const roles=[];
-  if((await contract.owner()).toLowerCase()===addr.toLowerCase())roles.push("Admin");
-  if(await contract.isProducer(addr))roles.push("Producer");
-  if(await contract.isTransporter(addr))roles.push("Transporter");
-  if(await contract.isDistributor(addr))roles.push("Distributor");
-  if(await contract.isRetailer(addr))roles.push("Retailer");
-  roleBadge.innerText="Role: "+(roles.length?roles.join(" / "):"Unregistered");
+async function detectRole() {
+  let roles = [];
+  if (await contract.owner() === user) roles.push("Admin");
+  if (await contract.isProducer(user)) roles.push("Producer");
+  if (await contract.isTransporter(user)) roles.push("Transporter");
+  if (await contract.isDistributor(user)) roles.push("Distributor");
+  if (await contract.isRetailer(user)) roles.push("Retailer");
+  role.innerText = "Role: " + (roles.length ? roles.join(" / ") : "-");
 }
 
-async function txWrap(promise,msg){
-  try{
-    setStatus("⏳ Transaction pending...");
-    const tx=await promise;
+async function send(fn) {
+  try {
+    show("⏳ Waiting for MetaMask…", "ok");
+    const tx = await fn();
+    show("⛓ Transaction sent…", "ok");
     await tx.wait();
-    setStatus("🟢 "+msg,"success");
-    loadBatches();
-  }catch(e){
-    setStatus("🔴 "+(e.reason||e.message),"error");
+    show("✅ Transaction confirmed!", "ok");
+  } catch (e) {
+    show("❌ " + (e.reason || e.message), "err");
   }
 }
 
-async function registerProducer(){txWrap(contract.registerProducer(producerAddr.value),"Producer registered")}
-async function registerTransporter(){txWrap(contract.registerTransporter(transporterAddr.value),"Transporter registered")}
-async function registerDistributor(){txWrap(contract.registerDistributor(distributorAddr.value),"Distributor registered")}
-async function registerRetailer(){txWrap(contract.registerRetailer(retailerAddr.value),"Retailer registered")}
-
-async function createBatch(){txWrap(contract.createBatch(bid.value,pname.value,qty.value),"Batch created")}
-async function addSensor(){txWrap(contract.addSensorData(sid.value,temp.value,hum.value,loc.value),"Sensor added")}
-async function transferOwner(){txWrap(contract.transferOwnership(tid.value,newOwner.value),"Ownership transferred")}
-async function markArrived(p){txWrap(contract.markAsArrived(rid.value,p),"Inspection saved")}
-
-async function loadBatches(){
-  if(!contract)return;
-  const ids=await contract.listBatches();
-  batchList.innerHTML=ids.length?"Batch IDs: <b>"+ids.join(", ")+"</b>":"No batches";
+function show(msg, type) {
+  status.innerHTML = `<div class="status ${type}">${msg}</div>`;
 }
 
-/* QR ONLY */
-function generateQR(){
-  const id=trackId.value;
-  if(!id){setStatus("❌ Enter TrackID","error");return;}
-
-  const base=location.origin+location.pathname.replace("index.html","");
-  const url=base+"scan.html?batchId="+id;
-
-  qrimg.src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data="+encodeURIComponent(url);
-  qrlink.innerText=url;
-  customerBlock.classList.remove("hidden");
-  setStatus("🟢 QR code generated","success");
+function generateQR() {
+  const url = location.origin + location.pathname.replace("index.html","") +
+    "scan.html?batchId=" + qrid.value;
+  qrimg.src = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" +
+    encodeURIComponent(url);
+  qrlink.innerText = url;
 }
 
-openPanel("customer");
+openPanel("producer");
 </script>
-
 </body>
 </html>
