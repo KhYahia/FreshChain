@@ -38,6 +38,16 @@ body {
   white-space: pre-wrap;
 }
 
+/* Status badges */
+.status-ok {
+  color: green;
+  font-weight: bold;
+}
+.status-bad {
+  color: red;
+  font-weight: bold;
+}
+
 button {
   padding: 14px;
   width: 100%;
@@ -63,35 +73,35 @@ button:hover {
 
 <body>
 
-<div class="container" id="printArea">
+<div class="container">
   <h2>FreshChain – Product Traceability Report</h2>
 
   <div class="section">
-    <h3> Product Info</h3>
+    <h3>📦 Product Info</h3>
     <div class="box" id="productInfo"></div>
   </div>
 
   <div class="section">
-    <h3> Participants</h3>
+    <h3>👥 Participants</h3>
     <div class="box" id="participants"></div>
   </div>
 
   <div class="section">
-    <h3> Status</h3>
+    <h3>✅ Status</h3>
     <div class="box" id="status"></div>
   </div>
 
   <div class="section">
-    <h3> Sensor Data</h3>
+    <h3>🌡️ Sensor Data</h3>
     <div class="box" id="sensorData"></div>
   </div>
 
   <div class="section">
-    <h3> Ownership History</h3>
+    <h3>🔁 Ownership History</h3>
     <div class="box" id="ownership"></div>
   </div>
 
-  <button onclick="window.print()"> Print / Download PDF</button>
+  <button onclick="window.print()">🖨️ Print / Download PDF</button>
 </div>
 
 <script>
@@ -114,10 +124,9 @@ async function loadHistory() {
 
   const provider = new ethers.providers.JsonRpcProvider(RPC);
   const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
-
   const b = await contract.getBatchHistory(batchId);
 
-  /* Product Info */
+  /* Product */
   productInfo.innerText =
 `Batch ID: ${b[0]}
 Product: ${b[1]}
@@ -130,10 +139,19 @@ Distributor: ${b[4]}
 Retailer: ${b[5]}
 Current Owner: ${b[6]}`;
 
-  /* Status */
-  status.innerText =
-`Arrived: ${b[7]}
-Inspection Passed: ${b[8]}`;
+  /* STATUS (FIXED) */
+  const arrivedText = b[7]
+    ? "🟢 Arrived"
+    : "🔴 Not Arrived";
+
+  const inspectionText = b[8]
+    ? "✅ Inspection Passed"
+    : "❌ Inspection Failed";
+
+  status.innerHTML =
+`<span class="${b[7] ? "status-ok" : "status-bad"}">${arrivedText}</span>
+<br>
+<span class="${b[8] ? "status-ok" : "status-bad"}">${inspectionText}</span>`;
 
   /* Sensor Data */
   if (b[9].length === 0) {
@@ -149,17 +167,13 @@ Transporter: ${s[4]}`
     ).join("\n\n");
   }
 
-  /* Ownership History */
-  if (b[10].length === 0) {
-    ownership.innerText = "No ownership transfers.";
-  } else {
-    ownership.innerText = b[10].map((o, i) =>
+  /* Ownership */
+  ownership.innerText = b[10].map((o, i) =>
 `Step ${i + 1}
 From: ${o[0]}
 To: ${o[1]}
 Time: ${new Date(Number(o[2]) * 1000).toLocaleString()}`
-    ).join("\n\n");
-  }
+  ).join("\n\n");
 }
 
 loadHistory();
