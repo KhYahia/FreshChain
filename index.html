@@ -1,175 +1,167 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" />
 <title>FreshChain – Dashboard</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 
 <style>
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  display: flex;
-  height: 100vh;
-}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: Arial, sans-serif; display: flex; height: 100vh; }
+
 .sidebar {
-  width: 300px;
+  width: 320px;
   background: #111;
   color: #fff;
   padding: 20px;
 }
-.sidebar h2 { margin-top: 0; }
+
 .sidebar button {
   width: 100%;
+  padding: 14px;
   margin: 6px 0;
-  padding: 12px;
+  border: none;
+  border-radius: 10px;
   background: #222;
   color: #fff;
-  border: none;
-  border-radius: 8px;
   cursor: pointer;
 }
 .sidebar button:hover { background: #444; }
 
-#account { font-size: 13px; word-break: break-all; color: #ccc; }
-#role { margin-top: 6px; color: #9ae6b4; }
+#account {
+  font-size: 13px;
+  word-break: break-all;
+  margin-top: 10px;
+}
 
 .main {
   flex: 1;
   padding: 20px;
   overflow-y: auto;
 }
+
 .card {
-  max-width: 520px;
+  max-width: 600px;
   border: 1px solid #ccc;
+  border-radius: 14px;
   padding: 16px;
-  border-radius: 12px;
   margin-bottom: 20px;
 }
-input, button { width: 100%; padding: 12px; margin-top: 6px; }
-label { font-size: 14px; margin-top: 10px; display: block; }
+
+input, button {
+  width: 100%;
+  padding: 14px;
+  margin: 6px 0;
+  font-size: 16px;
+}
+
 .hidden { display: none; }
 
-.status { padding: 12px; border-radius: 8px; margin-bottom: 12px; }
-.ok { background: #e6fffa; color: #065f46; }
-.err { background: #fee2e2; color: #7f1d1d; }
+#msg {
+  padding: 12px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+}
+#msg.ok { background: #e7f7ec; color: #136c2e; }
+#msg.err { background: #fde8e8; color: #8a1f1f; }
 </style>
 </head>
 
 <body>
 
+<!-- SIDEBAR -->
 <div class="sidebar">
   <h2>FreshChain</h2>
 
-  <!-- CONNECT CONTROLS (ALWAYS VISIBLE) -->
-  <button id="btnConnect" onclick="connect()">🔌 Connect Wallet</button>
-  <button id="btnDisconnect" onclick="disconnect()">🔓 Disconnect Wallet</button>
+  <button onclick="connect()">🔌 Connect Wallet</button>
+  <button onclick="disconnect()">❌ Disconnect Wallet</button>
 
-  <div id="account">Not connected</div>
-  <div id="role">Role: -</div>
-
+  <p id="account">Not connected</p>
+  <p id="role">Role: -</p>
   <hr>
 
-  <!-- ROLE BUTTONS -->
-  <button id="btnAdmin" onclick="openPanel('admin')" class="hidden">Admin</button>
-  <button id="btnProducer" onclick="openPanel('producer')" class="hidden">Producer</button>
-  <button id="btnTransporter" onclick="openPanel('transporter')" class="hidden">Transporter</button>
-  <button id="btnDistributor" onclick="openPanel('distributor')" class="hidden">Distributor</button>
-  <button id="btnRetailer" onclick="openPanel('retailer')" class="hidden">Retailer</button>
-
-  <!-- CUSTOMER ALWAYS AVAILABLE -->
-  <button id="btnCustomer" onclick="openPanel('customer')">Customer</button>
+  <button id="btnAdmin" onclick="openPanel('admin')">Admin</button>
+  <button id="btnProducer" onclick="openPanel('producer')">Producer</button>
+  <button id="btnTransporter" onclick="openPanel('transporter')">Transporter</button>
+  <button id="btnDistributor" onclick="openPanel('distributor')">Distributor</button>
+  <button id="btnRetailer" onclick="openPanel('retailer')">Retailer</button>
+  <button onclick="openPanel('customer')">Customer</button>
 </div>
 
+<!-- MAIN -->
 <div class="main">
-  <div id="status"></div>
 
-  <!-- ADMIN -->
-  <div id="admin" class="card hidden">
-    <h3>Admin – Register Roles</h3>
+<div id="msg" class="hidden"></div>
 
-    <label>Producer Address</label>
-    <input id="producerAddr">
-    <button onclick="send(() => contract.registerProducer(producerAddr.value))">
-      Register Producer
-    </button>
+<!-- ADMIN -->
+<div id="admin" class="card hidden">
+  <h3>Admin – Register Roles</h3>
 
-    <label>Transporter Address</label>
-    <input id="transporterAddr">
-    <button onclick="send(() => contract.registerTransporter(transporterAddr.value))">
-      Register Transporter
-    </button>
+  <input id="producerAddr" placeholder="Producer address" />
+  <button onclick="send(()=>registerRole('producer'))">Register Producer</button>
 
-    <label>Distributor Address</label>
-    <input id="distributorAddr">
-    <button onclick="send(() => contract.registerDistributor(distributorAddr.value))">
-      Register Distributor
-    </button>
+  <input id="transporterAddr" placeholder="Transporter address" />
+  <button onclick="send(()=>registerRole('transporter'))">Register Transporter</button>
 
-    <label>Retailer Address</label>
-    <input id="retailerAddr">
-    <button onclick="send(() => contract.registerRetailer(retailerAddr.value))">
-      Register Retailer
-    </button>
-  </div>
+  <input id="distributorAddr" placeholder="Distributor address" />
+  <button onclick="send(()=>registerRole('distributor'))">Register Distributor</button>
 
-  <!-- PRODUCER -->
-  <div id="producer" class="card hidden">
-    <h3>Producer – Create Batch</h3>
-    <input id="bid" placeholder="Batch ID">
-    <input id="pname" placeholder="Product Name">
-    <input id="qty" placeholder="Quantity">
-    <button onclick="send(() => contract.createBatch(bid.value, pname.value, qty.value))">
-      Create Batch
-    </button>
-  </div>
+  <input id="retailerAddr" placeholder="Retailer address" />
+  <button onclick="send(()=>registerRole('retailer'))">Register Retailer</button>
+</div>
 
-  <!-- TRANSPORTER -->
-  <div id="transporter" class="card hidden">
-    <h3>Transporter – Add Sensor Data</h3>
-    <input id="sid" placeholder="Batch ID">
-    <input id="temp" placeholder="Temperature">
-    <input id="hum" placeholder="Humidity">
-    <input id="loc" placeholder="Location">
-    <button onclick="send(() => contract.addSensorData(sid.value, temp.value, hum.value, loc.value))">
-      Add Sensor Data
-    </button>
-  </div>
+<!-- PRODUCER -->
+<div id="producer" class="card hidden">
+  <h3>Producer – Create Batch</h3>
+  <input id="bid" placeholder="Batch ID" />
+  <input id="pname" placeholder="Product name" />
+  <input id="qty" placeholder="Quantity" />
+  <button onclick="send(createBatch)">Create Batch</button>
+</div>
 
-  <!-- DISTRIBUTOR -->
-  <div id="distributor" class="card hidden">
-    <h3>Distributor – Transfer Ownership</h3>
-    <input id="tid" placeholder="Batch ID">
-    <input id="newOwner" placeholder="New Owner Address">
-    <button onclick="send(() => contract.transferOwnership(tid.value, newOwner.value))">
-      Transfer Ownership
-    </button>
-  </div>
+<!-- TRANSPORTER -->
+<div id="transporter" class="card hidden">
+  <h3>Transporter – Add Sensor Data</h3>
+  <input id="sid" placeholder="Batch ID" />
+  <input id="temp" placeholder="Temperature (°C)" />
+  <input id="hum" placeholder="Humidity (%)" />
+  <input id="loc" placeholder="Location" />
+  <button onclick="send(addSensor)">Add Sensor Data</button>
+</div>
 
-  <!-- RETAILER -->
-  <div id="retailer" class="card hidden">
-    <h3>Retailer – Inspection</h3>
-    <input id="rid" placeholder="Batch ID">
-    <button onclick="send(() => contract.markAsArrived(rid.value, true))">
-      Mark Passed
-    </button>
-  </div>
+<!-- DISTRIBUTOR -->
+<div id="distributor" class="card hidden">
+  <h3>Distributor – Transfer Ownership</h3>
+  <input id="tid" placeholder="Batch ID" />
+  <input id="newOwner" placeholder="New owner address" />
+  <button onclick="send(transferOwner)">Transfer Ownership</button>
+</div>
 
-  <!-- CUSTOMER -->
-  <div id="customer" class="card hidden">
-    <h3>Customer – QR Code</h3>
-    <input id="qrid" placeholder="Batch ID">
-    <button onclick="generateQR()">Generate QR</button>
-    <br><br>
-    <img id="qrimg">
-    <p id="qrlink"></p>
-  </div>
+<!-- RETAILER -->
+<div id="retailer" class="card hidden">
+  <h3>Retailer – Inspection</h3>
+  <input id="rid" placeholder="Batch ID" />
+  <button onclick="send(()=>markArrived(true))">Mark Passed</button>
+  <button onclick="send(()=>markArrived(false))">Mark Failed</button>
+</div>
+
+<!-- CUSTOMER -->
+<div id="customer" class="card hidden">
+  <h3>Customer – QR Code</h3>
+  <input id="qrid" placeholder="Batch ID" />
+  <button onclick="generateQR()">Generate QR</button>
+  <img id="qrimg" />
+  <p id="qrlink"></p>
+</div>
+
 </div>
 
 <script>
+/* ================= CONFIG ================= */
 const CONTRACT_ADDRESS = "0xC7d8B75156Ac7fd509aD5eC360Bd0258A4459bfd";
+const RPC = "https://eth-sepolia.g.alchemy.com/v2/7nq9DSo1P4TvLc7p9bOfr";
 
 const ABI = [
  "function registerProducer(address)",
@@ -180,129 +172,131 @@ const ABI = [
  "function addSensorData(uint256,int256,int256,string)",
  "function transferOwnership(uint256,address)",
  "function markAsArrived(uint256,bool)",
- "function isProducer(address) view returns (bool)",
- "function isTransporter(address) view returns (bool)",
- "function isDistributor(address) view returns (bool)",
- "function isRetailer(address) view returns (bool)",
- "function owner() view returns (address)"
+ "function isProducer(address) view returns(bool)",
+ "function isTransporter(address) view returns(bool)",
+ "function isDistributor(address) view returns(bool)",
+ "function isRetailer(address) view returns(bool)",
+ "function owner() view returns(address)"
 ];
 
-let signer = null;
-let contract = null;
-let user = null;
+let provider, signer, contract, currentAccount;
+
+/* ================= UI HELPERS ================= */
+function show(msg, type) {
+  const el = document.getElementById("msg");
+  el.className = type ? type : "";
+  el.innerText = msg;
+  el.classList.remove("hidden");
+}
+function clearMsg() {
+  document.getElementById("msg").classList.add("hidden");
+}
 
 function openPanel(id) {
-  document.querySelectorAll(".card").forEach(c => c.classList.add("hidden"));
+  document.querySelectorAll(".card").forEach(c=>c.classList.add("hidden"));
   document.getElementById(id).classList.remove("hidden");
+  clearMsg();
 }
 
-async function connect() {
-  const provider = new ethers.providers.Web3Provider(window.ethereum);
-  await provider.send("eth_requestAccounts", []);
+/* ================= VALIDATION ================= */
+function requireValue(v, m){ if(!v||v.toString().trim()==="") throw new Error(m); }
+function requireNumber(v,m){ requireValue(v,m); if(isNaN(v)) throw new Error(m+" must be a number."); }
+function requirePositive(v,m){ requireNumber(v,m); if(v<=0) throw new Error(m+" must be > 0."); }
+function requireAddress(a,m){ requireValue(a,m); if(!ethers.utils.isAddress(a)) throw new Error("Invalid "+m+"."); }
+function requireTemp(t){ requireNumber(t,"Temperature"); if(t<-50||t>100) throw new Error("Temperature must be between -50°C and 100°C."); }
+function requireHum(h){ requireNumber(h,"Humidity"); if(h<0||h>100) throw new Error("Humidity must be between 0% and 100%."); }
+
+/* ================= WALLET ================= */
+async function connect(){
+  provider = new ethers.providers.Web3Provider(window.ethereum);
+  await provider.send("eth_requestAccounts",[]);
   signer = provider.getSigner();
-  user = await signer.getAddress();
   contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
-  account.innerText = user;
-  await applyRoleUI();
-  show("✅ Wallet connected", "ok");
+  currentAccount = await signer.getAddress();
+  document.getElementById("account").innerText = currentAccount;
+  await applyRoles();
 }
 
-function disconnect() {
-  signer = null;
-  contract = null;
-  user = null;
-
-  account.innerText = "Not connected";
-  role.innerText = "Role: -";
-  status.innerHTML = "";
-
-  // Hide role buttons ONLY
-  btnAdmin.classList.add("hidden");
-  btnProducer.classList.add("hidden");
-  btnTransporter.classList.add("hidden");
-  btnDistributor.classList.add("hidden");
-  btnRetailer.classList.add("hidden");
-
-  document.querySelectorAll(".card").forEach(c => c.classList.add("hidden"));
-  openPanel("customer");
-
-  show("🔓 Wallet disconnected. You can connect again.", "ok");
+function disconnect(){
+  provider = signer = contract = currentAccount = null;
+  document.getElementById("account").innerText = "Not connected";
+  document.getElementById("role").innerText = "Role: -";
+  document.querySelectorAll(".card").forEach(c=>c.classList.add("hidden"));
+  clearMsg();
 }
 
-async function applyRoleUI() {
-  btnAdmin.classList.add("hidden");
-  btnProducer.classList.add("hidden");
-  btnTransporter.classList.add("hidden");
-  btnDistributor.classList.add("hidden");
-  btnRetailer.classList.add("hidden");
-
+/* ================= ROLES ================= */
+async function applyRoles(){
+  const owner = await contract.owner();
   let roles = [];
 
-  if (await contract.owner() === user) {
+  if(currentAccount.toLowerCase()===owner.toLowerCase()){
     roles.push("Admin");
-    btnAdmin.classList.remove("hidden");
-    btnProducer.classList.remove("hidden");
-    btnTransporter.classList.remove("hidden");
-    btnDistributor.classList.remove("hidden");
-    btnRetailer.classList.remove("hidden");
-  }
-  if (await contract.isProducer(user)) {
-    roles.push("Producer");
-    btnProducer.classList.remove("hidden");
-  }
-  if (await contract.isTransporter(user)) {
-    roles.push("Transporter");
-    btnTransporter.classList.remove("hidden");
-  }
-  if (await contract.isDistributor(user)) {
-    roles.push("Distributor");
-    btnDistributor.classList.remove("hidden");
-  }
-  if (await contract.isRetailer(user)) {
-    roles.push("Retailer");
-    btnRetailer.classList.remove("hidden");
+    ["btnAdmin","btnProducer","btnTransporter","btnDistributor","btnRetailer"].forEach(id=>document.getElementById(id).style.display="block");
+    openPanel("admin");
+  } else {
+    if(await contract.isProducer(currentAccount)){ roles.push("Producer"); openPanel("producer"); }
+    if(await contract.isTransporter(currentAccount)){ roles.push("Transporter"); openPanel("transporter"); }
+    if(await contract.isDistributor(currentAccount)){ roles.push("Distributor"); openPanel("distributor"); }
+    if(await contract.isRetailer(currentAccount)){ roles.push("Retailer"); openPanel("retailer"); }
+
+    ["btnAdmin","btnProducer","btnTransporter","btnDistributor","btnRetailer"].forEach(id=>document.getElementById(id).style.display="none");
   }
 
-  role.innerText = "Role: " + (roles.length ? roles.join(" / ") : "-");
-
-  if (roles.includes("Admin")) openPanel("admin");
-  else if (roles.includes("Producer")) openPanel("producer");
-  else if (roles.includes("Transporter")) openPanel("transporter");
-  else if (roles.includes("Distributor")) openPanel("distributor");
-  else if (roles.includes("Retailer")) openPanel("retailer");
-  else openPanel("customer");
+  document.getElementById("role").innerText = "Role: " + (roles.join(", ") || "Customer");
 }
 
-async function send(fn) {
-  if (!contract) {
-    show("❌ Connect wallet first", "err");
-    return;
-  }
-  try {
-    show("⏳ Waiting for MetaMask…", "ok");
-    const tx = await fn();
-    show("⛓ Transaction sent…", "ok");
+/* ================= ACTIONS ================= */
+async function send(action){
+  try{
+    clearMsg();
+    const tx = await action();
+    show("⏳ Transaction sent. Waiting confirmation…","ok");
     await tx.wait();
-    show("✅ Transaction confirmed!", "ok");
-  } catch (e) {
-    show("❌ " + (e.reason || e.message), "err");
+    show("✅ Transaction successful.","ok");
+    await applyRoles();
+  }catch(e){
+    show(e.message || "Transaction failed.","err");
   }
 }
 
-function show(msg, type) {
-  status.innerHTML = `<div class="status ${type}">${msg}</div>`;
+function registerRole(type){
+  if(type==="producer"){ requireAddress(producerAddr.value,"Producer address"); return contract.registerProducer(producerAddr.value); }
+  if(type==="transporter"){ requireAddress(transporterAddr.value,"Transporter address"); return contract.registerTransporter(transporterAddr.value); }
+  if(type==="distributor"){ requireAddress(distributorAddr.value,"Distributor address"); return contract.registerDistributor(distributorAddr.value); }
+  if(type==="retailer"){ requireAddress(retailerAddr.value,"Retailer address"); return contract.registerRetailer(retailerAddr.value); }
 }
 
-function generateQR() {
-  const url =
-    location.origin +
-    location.pathname.replace("index.html","") +
-    "scan.html?batchId=" + qrid.value;
+function createBatch(){
+  requireNumber(bid.value,"Batch ID");
+  requireValue(pname.value,"Product name");
+  requirePositive(qty.value,"Quantity");
+  return contract.createBatch(bid.value,pname.value,qty.value);
+}
 
-  qrimg.src =
-    "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" +
-    encodeURIComponent(url);
+function addSensor(){
+  requireNumber(sid.value,"Batch ID");
+  requireTemp(temp.value);
+  requireHum(hum.value);
+  requireValue(loc.value,"Location");
+  return contract.addSensorData(sid.value,temp.value,hum.value,loc.value);
+}
 
+function transferOwner(){
+  requireNumber(tid.value,"Batch ID");
+  requireAddress(newOwner.value,"New owner address");
+  return contract.transferOwnership(tid.value,newOwner.value);
+}
+
+function markArrived(p){
+  requireNumber(rid.value,"Batch ID");
+  return contract.markAsArrived(rid.value,p);
+}
+
+function generateQR(){
+  requireNumber(qrid.value,"Batch ID");
+  const url = location.origin + location.pathname.replace("index.html","") + "scan.html?batchId="+qrid.value;
+  qrimg.src = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data="+encodeURIComponent(url);
   qrlink.innerText = url;
 }
 </script>
