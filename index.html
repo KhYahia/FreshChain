@@ -8,82 +8,34 @@
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 
 <style>
-* { box-sizing: border-box; }
-
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  display: flex;
-  height: 100vh;
-}
-
-/* SIDEBAR */
-.sidebar {
-  width: 320px;
-  background: #111;
-  color: #fff;
-  padding: 20px;
-}
-
-.sidebar button {
-  width: 100%;
-  margin: 6px 0;
-  padding: 14px;
-  background: #222;
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-}
-
-#account {
-  word-break: break-all;
-  font-size: 13px;
-  color: #ccc;
-}
-
-/* MAIN */
-.main {
-  flex: 1;
-  padding: 20px;
-  overflow-y: auto;
-}
-
-.card {
-  border: 1px solid #ccc;
-  padding: 16px;
-  border-radius: 14px;
-  max-width: 520px;
-  margin-bottom: 20px;
-}
-
-input, button {
-  padding: 14px;
-  margin: 6px 0;
-  width: 100%;
-}
-
-.hidden { display: none; }
-
-/* STATUS */
-.status {
-  padding: 12px;
-  border-radius: 10px;
-  margin-bottom: 16px;
-  font-size: 14px;
-}
-.status.info { background: #eef; }
-.status.success { background: #e6ffed; color: #056608; }
-.status.error { background: #ffe6e6; color: #8a0000; }
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;display:flex;height:100vh}
+.sidebar{width:320px;background:#111;color:#fff;padding:20px}
+.sidebar button{width:100%;margin:6px 0;padding:14px;background:#222;color:#fff;border:none;border-radius:10px;cursor:pointer}
+#account{word-break:break-all;font-size:13px;color:#ccc}
+.badge{display:inline-block;padding:6px 10px;border-radius:999px;background:#222;font-size:12px;margin-top:8px}
+.main{flex:1;padding:20px;overflow-y:auto}
+.card{border:1px solid #ccc;padding:16px;border-radius:14px;max-width:700px;margin-bottom:20px}
+input,button{padding:14px;margin:6px 0;width:100%;font-size:16px}
+.hidden{display:none}
+.status{padding:12px;border-radius:10px;margin-bottom:16px;font-size:14px}
+.status.info{background:#eef}
+.status.success{background:#e6ffed;color:#056608}
+.status.error{background:#ffe6e6;color:#8a0000}
+pre{background:#f5f5f5;padding:12px;border-radius:10px;white-space:pre-wrap}
+.small{font-size:12px;color:#666}
+hr{border:none;border-top:1px solid #333;margin:12px 0}
 </style>
 </head>
 
 <body>
 
+<!-- SIDEBAR -->
 <div class="sidebar">
   <h2>FreshChain</h2>
   <button onclick="connect()">🔌 Connect Wallet</button>
   <p id="account">Not connected</p>
+  <div id="roleBadge" class="badge">Role: -</div>
   <hr>
   <button onclick="openPanel('admin')">Admin</button>
   <button onclick="openPanel('producer')">Producer</button>
@@ -93,23 +45,27 @@ input, button {
   <button onclick="openPanel('customer')">Customer</button>
 </div>
 
+<!-- MAIN -->
 <div class="main">
 
 <div id="status" class="status info">ℹ️ Ready</div>
 
+<!-- LIST BATCHES -->
+<div class="card">
+  <h3>📦 Available Batches</h3>
+  <button onclick="loadBatches()">List Batches</button>
+  <div id="batchList" class="small">No data yet.</div>
+</div>
+
 <!-- ADMIN -->
 <div id="admin" class="card hidden">
   <h3>Admin – Register Roles</h3>
-
   <input id="producerAddr" placeholder="Producer address">
   <button onclick="registerProducer()">Register Producer</button>
-
   <input id="transporterAddr" placeholder="Transporter address">
   <button onclick="registerTransporter()">Register Transporter</button>
-
   <input id="distributorAddr" placeholder="Distributor address">
   <button onclick="registerDistributor()">Register Distributor</button>
-
   <input id="retailerAddr" placeholder="Retailer address">
   <button onclick="registerRetailer()">Register Retailer</button>
 </div>
@@ -125,7 +81,7 @@ input, button {
 
 <!-- TRANSPORTER -->
 <div id="transporter" class="card hidden">
-  <h3>Transporter – Sensor Data</h3>
+  <h3>Transporter – Add Sensor Data</h3>
   <input id="sid" placeholder="Batch ID">
   <input id="temp" placeholder="Temperature">
   <input id="hum" placeholder="Humidity">
@@ -151,113 +107,138 @@ input, button {
 
 <!-- CUSTOMER -->
 <div id="customer" class="card hidden">
-  <h3>Customer – QR Code</h3>
-  <input id="qrid" placeholder="Batch ID">
-  <button onclick="generateQR()">Generate QR</button>
-  <br><br>
-  <img id="qrimg">
-  <p id="qrlink"></p>
+  <h3>Customer – TrackID / Get History</h3>
+  <input id="trackId" placeholder="TrackID (Batch ID)">
+  <button onclick="getHistory()">GET HISTORY</button>
+
+  <div id="customerBlock" class="hidden">
+    <pre id="historyOut"></pre>
+    <img id="qrimg">
+    <p id="qrlink" class="small"></p>
+  </div>
 </div>
 
 </div>
 
 <script>
-const CONTRACT_ADDRESS = "0x9167AD9a32c5148F461bc6EbE9831236337f2612";
+/* ===== CONFIG ===== */
+const CONTRACT_ADDRESS = "0xC7d8B75156Ac7fd509aD5eC360Bd0258A4459bfd";
+const RPC = "https://eth-sepolia.g.alchemy.com/v2/7nq9DSo1P4TvLc7p9bOfr";
 
+/* ===== ABI ===== */
 const ABI = [
- "function registerProducer(address)",
- "function registerTransporter(address)",
- "function registerDistributor(address)",
- "function registerRetailer(address)",
- "function createBatch(uint256,string,uint256)",
- "function addSensorData(uint256,int256,int256,string)",
- "function transferOwnership(uint256,address)",
- "function markAsArrived(uint256,bool)"
+  "function owner() view returns (address)",
+  "function isProducer(address) view returns (bool)",
+  "function isTransporter(address) view returns (bool)",
+  "function isDistributor(address) view returns (bool)",
+  "function isRetailer(address) view returns (bool)",
+  "function registerProducer(address)",
+  "function registerTransporter(address)",
+  "function registerDistributor(address)",
+  "function registerRetailer(address)",
+  "function createBatch(uint256,string,uint256)",
+  "function addSensorData(uint256,int256,int256,string)",
+  "function transferOwnership(uint256,address)",
+  "function markAsArrived(uint256,bool)",
+  "function listBatches() view returns (uint256[])",
+  "function getBatchHistory(uint256) view returns (uint256,string,uint256,address,address,address,address,bool,bool,(int256,int256,string,uint256,address)[],(address,address,uint256)[])"
 ];
 
 let signer, contract;
-const account = document.getElementById("account");
 const statusBox = document.getElementById("status");
+const roleBadge = document.getElementById("roleBadge");
 
-function setStatus(msg, type="info") {
-  statusBox.className = "status " + type;
-  statusBox.innerText = msg;
-}
-
-function openPanel(id) {
-  document.querySelectorAll(".card").forEach(c => c.classList.add("hidden"));
+function setStatus(msg,type="info"){statusBox.className="status "+type;statusBox.innerText=msg;}
+function openPanel(id){
+  document.querySelectorAll(".card").forEach(c=>{if(c.id)c.classList.add("hidden")});
   document.getElementById(id).classList.remove("hidden");
 }
 
-async function connect() {
-  try {
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    await provider.send("eth_requestAccounts", []);
-    signer = provider.getSigner();
-    contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
-    account.innerText = await signer.getAddress();
-    setStatus("🟢 Wallet connected", "success");
-  } catch {
-    setStatus("🔴 Wallet connection failed", "error");
+async function connect(){
+  const provider=new ethers.providers.Web3Provider(window.ethereum);
+  await provider.send("eth_requestAccounts",[]);
+  signer=provider.getSigner();
+  contract=new ethers.Contract(CONTRACT_ADDRESS,ABI,signer);
+  const addr=await signer.getAddress();
+  document.getElementById("account").innerText=addr;
+  setStatus("🟢 Wallet connected","success");
+  detectRole(addr);
+}
+
+async function detectRole(addr){
+  const roles=[];
+  if((await contract.owner()).toLowerCase()===addr.toLowerCase())roles.push("Admin");
+  if(await contract.isProducer(addr))roles.push("Producer");
+  if(await contract.isTransporter(addr))roles.push("Transporter");
+  if(await contract.isDistributor(addr))roles.push("Distributor");
+  if(await contract.isRetailer(addr))roles.push("Retailer");
+  roleBadge.innerText="Role: "+(roles.length?roles.join(" / "):"Unregistered");
+}
+
+async function txWrap(promise,msg){
+  try{
+    setStatus("⏳ Transaction pending...");
+    const tx=await promise; await tx.wait();
+    setStatus("🟢 "+msg,"success");
+    loadBatches();
+  }catch(e){
+    setStatus("🔴 "+(e.reason||e.message),"error");
   }
 }
 
 /* ADMIN */
-async function registerProducer() {
-  await txWrap(contract.registerProducer(producerAddr.value), "Producer registered");
-}
-async function registerTransporter() {
-  await txWrap(contract.registerTransporter(transporterAddr.value), "Transporter registered");
-}
-async function registerDistributor() {
-  await txWrap(contract.registerDistributor(distributorAddr.value), "Distributor registered");
-}
-async function registerRetailer() {
-  await txWrap(contract.registerRetailer(retailerAddr.value), "Retailer registered");
-}
+async function registerProducer(){txWrap(contract.registerProducer(producerAddr.value),"Producer registered")}
+async function registerTransporter(){txWrap(contract.registerTransporter(transporterAddr.value),"Transporter registered")}
+async function registerDistributor(){txWrap(contract.registerDistributor(distributorAddr.value),"Distributor registered")}
+async function registerRetailer(){txWrap(contract.registerRetailer(retailerAddr.value),"Retailer registered")}
 
 /* ACTIONS */
-async function createBatch() {
-  await txWrap(contract.createBatch(bid.value, pname.value, qty.value), "Batch created");
-}
-async function addSensor() {
-  await txWrap(contract.addSensorData(sid.value, temp.value, hum.value, loc.value), "Sensor data added");
-}
-async function transferOwner() {
-  await txWrap(contract.transferOwnership(tid.value, newOwner.value), "Ownership transferred");
-}
-async function markArrived(passed) {
-  await txWrap(contract.markAsArrived(rid.value, passed), "Inspection saved");
-}
+async function createBatch(){txWrap(contract.createBatch(bid.value,pname.value,qty.value),"Batch created")}
+async function addSensor(){txWrap(contract.addSensorData(sid.value,temp.value,hum.value,loc.value),"Sensor added")}
+async function transferOwner(){txWrap(contract.transferOwnership(tid.value,newOwner.value),"Ownership transferred")}
+async function markArrived(p){txWrap(contract.markAsArrived(rid.value,p),"Inspection saved")}
 
-/* TRANSACTION HANDLER */
-async function txWrap(txPromise, successMsg) {
-  try {
-    setStatus("⏳ Transaction pending...", "info");
-    const tx = await txPromise;
-    await tx.wait();
-    setStatus("🟢 " + successMsg, "success");
-  } catch (e) {
-    setStatus("🔴 " + (e.reason || e.message), "error");
-  }
+/* LIST BATCHES */
+async function loadBatches(){
+  if(!contract)return;
+  const ids=await contract.listBatches();
+  document.getElementById("batchList").innerHTML=
+    ids.length?"Batch IDs: <b>"+ids.join(", ")+"</b>":"No batches found";
 }
 
-/* QR GENERATION — CORRECT FOR GITHUB PAGES */
-function generateQR() {
-  const base =
-    location.origin +
-    location.pathname.replace("index.html", "");
+/* CUSTOMER HISTORY */
+async function getHistory(){
+  const id=trackId.value;
+  const provider=new ethers.providers.JsonRpcProvider(RPC);
+  const c=new ethers.Contract(CONTRACT_ADDRESS,ABI,provider);
+  const b=await c.getBatchHistory(id);
 
-  const url = base + "scan.html?batchId=" + qrid.value;
+  let t=`Batch ID: ${b[0]}
+Product: ${b[1]}
+Quantity: ${b[2]}
 
-  qrimg.src =
-    "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" +
-    encodeURIComponent(url);
+Producer: ${b[3]}
+Distributor: ${b[4]}
+Retailer: ${b[5]}
+Current Owner: ${b[6]}
 
-  qrlink.innerText = url;
+Arrived: ${b[7]}
+Inspection Passed: ${b[8]}\n`;
+
+  b[9].forEach((s,i)=>{
+    t+=`\nSensor ${i+1}: ${s[0]}°C, ${s[1]}%, ${s[2]}`;
+  });
+
+  document.getElementById("historyOut").innerText=t;
+
+  const base=location.origin+location.pathname.replace("index.html","");
+  const url=base+"scan.html?batchId="+id;
+  qrimg.src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data="+encodeURIComponent(url);
+  qrlink.innerText=url;
+  customerBlock.classList.remove("hidden");
 }
 
-openPanel("admin");
+openPanel("customer");
 </script>
 
 </body>
