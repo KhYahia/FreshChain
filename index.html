@@ -88,9 +88,13 @@ label {
 <!-- SIDEBAR -->
 <div class="sidebar">
   <h2>FreshChain</h2>
+
   <button onclick="connect()">🔌 Connect Wallet</button>
+  <button onclick="disconnect()">🔓 Disconnect Wallet</button>
+
   <div id="account">Not connected</div>
   <div id="role">Role: -</div>
+
   <hr>
   <button onclick="openPanel('admin')">Admin</button>
   <button onclick="openPanel('producer')">Producer</button>
@@ -206,7 +210,9 @@ const ABI = [
  "function owner() view returns (address)"
 ];
 
-let signer, contract, user;
+let signer = null;
+let contract = null;
+let user = null;
 
 function openPanel(id) {
   document.querySelectorAll(".card").forEach(c => c.classList.add("hidden"));
@@ -214,13 +220,29 @@ function openPanel(id) {
 }
 
 async function connect() {
+  if (!window.ethereum) {
+    alert("MetaMask not found");
+    return;
+  }
   const provider = new ethers.providers.Web3Provider(window.ethereum);
   await provider.send("eth_requestAccounts", []);
   signer = provider.getSigner();
   user = await signer.getAddress();
   contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
   account.innerText = user;
-  detectRole();
+  await detectRole();
+  show("✅ Wallet connected", "ok");
+}
+
+function disconnect() {
+  signer = null;
+  contract = null;
+  user = null;
+  account.innerText = "Not connected";
+  role.innerText = "Role: -";
+  status.innerHTML = "";
+  document.querySelectorAll(".card").forEach(c => c.classList.add("hidden"));
+  show("🔓 Wallet disconnected. You can connect another account.", "ok");
 }
 
 async function detectRole() {
@@ -234,6 +256,10 @@ async function detectRole() {
 }
 
 async function send(fn) {
+  if (!contract) {
+    show("❌ Connect wallet first", "err");
+    return;
+  }
   try {
     show("⏳ Waiting for MetaMask…", "ok");
     const tx = await fn();
@@ -267,4 +293,3 @@ openPanel("producer");
 
 </body>
 </html>
-
