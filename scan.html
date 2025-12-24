@@ -39,19 +39,10 @@ body {
   font-size: 14px;
 }
 
-/* STATUS (NO BOX) */
 .status-line {
   font-size: 15px;
   font-weight: bold;
   margin: 4px 0;
-}
-
-.status-yes {
-  color: #1b8a3b;
-}
-
-.status-no {
-  color: #c0392b;
 }
 
 button {
@@ -65,15 +56,8 @@ button {
   cursor: pointer;
 }
 
-button:hover {
-  background: #444;
-}
-
-/* PRINT */
 @media print {
   button { display: none; }
-  body { background: white; }
-  .container { box-shadow: none; }
 }
 </style>
 </head>
@@ -83,41 +67,35 @@ button:hover {
 <div class="container">
   <h2>FreshChain – Product Traceability Report</h2>
 
-  <!-- PRODUCT INFO -->
   <div class="section">
-    <h3> Product Info</h3>
+    <h3>📦 Product Info</h3>
     <div class="box" id="productInfo"></div>
   </div>
 
-  <!-- PARTICIPANTS -->
   <div class="section">
-    <h3> Participants</h3>
+    <h3>👥 Participants</h3>
     <div class="box" id="participants"></div>
   </div>
 
-  <!-- STATUS (NO BOX) -->
   <div class="section">
-    <h3> Status</h3>
+    <h3>✅ Status</h3>
     <div id="status"></div>
   </div>
 
-  <!-- SENSOR DATA -->
   <div class="section">
-    <h3> Sensor Data</h3>
+    <h3>🌡️ Sensor Data</h3>
     <div class="box" id="sensorData"></div>
   </div>
 
-  <!-- OWNERSHIP -->
   <div class="section">
-    <h3> Ownership History</h3>
+    <h3>🔁 Ownership History</h3>
     <div class="box" id="ownership"></div>
   </div>
 
-  <button onclick="window.print()">Print / Download PDF</button>
+  <button onclick="window.print()">🖨️ Print / Download PDF</button>
 </div>
 
 <script>
-/* ================= CONFIG ================= */
 const CONTRACT_ADDRESS = "0xC7d8B75156Ac7fd509aD5eC360Bd0258A4459bfd";
 const RPC = "https://eth-sepolia.g.alchemy.com/v2/7nq9DSo1P4TvLc7p9bOfr";
 
@@ -125,63 +103,46 @@ const ABI = [
   "function getBatchHistory(uint256) view returns (uint256,string,uint256,address,address,address,address,bool,bool,(int256,int256,string,uint256,address)[],(address,address,uint256)[])"
 ];
 
-const params = new URLSearchParams(window.location.search);
-const batchId = params.get("batchId");
+const batchId = new URLSearchParams(window.location.search).get("batchId");
 
 async function loadHistory() {
-  if (!batchId) {
-    alert("No batchId provided in URL");
-    return;
-  }
-
   const provider = new ethers.providers.JsonRpcProvider(RPC);
   const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
   const b = await contract.getBatchHistory(batchId);
 
-  /* PRODUCT */
   productInfo.innerText =
 `Batch ID: ${b[0]}
 Product: ${b[1]}
 Quantity: ${b[2]}`;
 
-  /* PARTICIPANTS */
   participants.innerText =
 `Producer: ${b[3]}
 Distributor: ${b[4]}
 Retailer: ${b[5]}
 Current Owner: ${b[6]}`;
 
-  /* STATUS (CLEAN, NO BOX) */
+  /* ===== STATUS (ABSOLUTE FIX) ===== */
+  const arrived = Boolean(b[7]);
+  const inspected = Boolean(b[8]);
+
   status.innerHTML = `
-    <div class="status-line ${b[7] ? "status-yes" : "status-no"}">
-      ${b[7] ? "🟢 Arrived" : "🔴 Not Arrived"}
-    </div>
-    <div class="status-line ${b[8] ? "status-yes" : "status-no"}">
-      ${b[8] ? "✅ Inspection Passed" : "❌ Inspection Failed"}
-    </div>
+    <div class="status-line">Arrived: ${arrived ? "YES" : "NO"}</div>
+    <div class="status-line">Inspection Passed: ${inspected ? "YES" : "NO"}</div>
   `;
 
-  /* SENSOR DATA */
-  if (b[9].length === 0) {
-    sensorData.innerText = "No sensor data recorded.";
-  } else {
-    sensorData.innerText = b[9].map((s, i) =>
-`Record ${i + 1}
+  sensorData.innerText = b[9].length === 0
+    ? "No sensor data recorded."
+    : b[9].map((s,i)=>`Record ${i+1}
 Temperature: ${s[0]} °C
 Humidity: ${s[1]} %
 Location: ${s[2]}
-Time: ${new Date(Number(s[3]) * 1000).toLocaleString()}
-Transporter: ${s[4]}`
-    ).join("\n\n");
-  }
+Time: ${new Date(Number(s[3])*1000).toLocaleString()}
+Transporter: ${s[4]}`).join("\n\n");
 
-  /* OWNERSHIP */
-  ownership.innerText = b[10].map((o, i) =>
-`Step ${i + 1}
+  ownership.innerText = b[10].map((o,i)=>`Step ${i+1}
 From: ${o[0]}
 To: ${o[1]}
-Time: ${new Date(Number(o[2]) * 1000).toLocaleString()}`
-  ).join("\n\n");
+Time: ${new Date(Number(o[2])*1000).toLocaleString()}`).join("\n\n");
 }
 
 loadHistory();
