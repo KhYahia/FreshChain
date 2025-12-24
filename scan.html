@@ -1,81 +1,223 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>FreshChain – Scan</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="UTF-8" />
+<title>FreshChain – Product Traceability</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 
 <style>
-body { font-family: Arial; padding: 20px; text-align: center; }
-.card {
-  max-width: 420px;
-  margin: auto;
-  padding: 20px;
-  border: 1px solid #ccc;
-  border-radius: 12px;
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f7f7f7;
+  padding: 16px;
 }
-pre {
-  background: #f5f5f5;
-  padding: 12px;
+
+.container {
+  max-width: 720px;
+  margin: auto;
+  background: #fff;
+  padding: 20px;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+}
+
+h1 {
+  margin-top: 0;
+  font-size: 22px;
+}
+
+.section {
+  margin-top: 20px;
+}
+
+.card {
+  background: #fafafa;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  padding: 14px;
+  margin-top: 10px;
+}
+
+.label {
+  font-size: 13px;
+  color: #666;
+}
+.value {
+  font-weight: bold;
+  word-break: break-all;
+}
+
+.badge {
+  display: inline-block;
+  padding: 6px 10px;
   border-radius: 8px;
-  text-align: left;
+  font-size: 13px;
+  margin-top: 6px;
+}
+.ok { background: #e6f7ec; color: #1f7a3f; }
+.err { background: #fde8e8; color: #8a1f1f; }
+
+pre {
+  white-space: pre-wrap;
+  font-size: 13px;
+  background: #f2f2f2;
+  padding: 12px;
+  border-radius: 10px;
+}
+
+.footer {
+  margin-top: 30px;
+  text-align: center;
+  font-size: 12px;
+  color: #888;
 }
 </style>
 </head>
 
 <body>
 
-<div class="card">
-  <h2>FreshChain – Product Info</h2>
-  <pre id="out">Loading...</pre>
+<div class="container">
+
+  <h1>📦 FreshChain – Product Traceability</h1>
+  <p class="label">Blockchain-verified supply chain information</p>
+
+  <div id="content">
+    <p>⏳ Loading product data from blockchain…</p>
+  </div>
+
+  <div class="footer">
+    Powered by Ethereum (Sepolia) · FreshChain
+  </div>
+
 </div>
 
 <script>
-/* 🔑 ALCHEMY RPC (READ ONLY) */
-const RPC =
-  "https://eth-sepolia.g.alchemy.com/v2/7nq9DSo1P4TvLc7p9bOfr";
+/* ================= CONFIG ================= */
+const CONTRACT_ADDRESS = "0xC7d8B75156Ac7fd509aD5eC360Bd0258A4459bfd";
+const RPC = "https://eth-sepolia.g.alchemy.com/v2/7nq9DSo1P4TvLc7p9bOfr";
 
-const CONTRACT =
-  "0xC7d8B75156Ac7fd509aD5eC360Bd0258A4459bfd";
-
-/* ABI: ONLY view function needed */
 const ABI = [
- "function getBatchHistory(uint256) view returns (" +
- "uint256,string,uint256,address,address,address,address,bool,bool," +
- "(int256,int256,string,uint256,address)[]," +
- "(address,address,uint256)[])"
+ "function getBatchHistory(uint256) view returns (uint256,string,uint256,address,address,address,address,bool,bool,(int256,int256,string,uint256,address)[],(address,address,uint256)[])"
 ];
 
-const id = new URLSearchParams(location.search).get("batchId");
-if (!id) {
-  out.innerText = "❌ No batchId provided";
-  throw "";
+const params = new URLSearchParams(window.location.search);
+const batchId = params.get("batchId");
+const content = document.getElementById("content");
+
+if (!batchId) {
+  content.innerHTML = "<p class='err badge'>❌ No batch ID provided in QR code.</p>";
+  throw new Error("No batchId");
 }
 
 (async () => {
   try {
     const provider = new ethers.providers.JsonRpcProvider(RPC);
-    const contract = new ethers.Contract(CONTRACT, ABI, provider);
+    const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
 
-    const b = await contract.getBatchHistory(id);
+    const b = await contract.getBatchHistory(batchId);
 
-    out.innerText = `
-Batch ID: ${b[0]}
-Product: ${b[1]}
-Quantity: ${b[2]}
+    const [
+      id,
+      productName,
+      quantity,
+      producer,
+      distributor,
+      retailer,
+      currentOwner,
+      arrived,
+      inspectionPassed,
+      sensors,
+      ownerships
+    ] = b;
 
-Producer: ${b[3]}
-Distributor: ${b[4]}
-Retailer: ${b[5]}
-Current Owner: ${b[6]}
+    let html = `
+      <div class="section">
+        <div class="card">
+          <div class="label">Batch ID</div>
+          <div class="value">${id}</div>
 
-Arrived: ${b[7]}
-Inspection Passed: ${b[8]}
+          <div class="label">Product</div>
+          <div class="value">${productName}</div>
+
+          <div class="label">Quantity</div>
+          <div class="value">${quantity}</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>👥 Participants</h3>
+        <div class="card">
+          <div class="label">Producer</div>
+          <div class="value">${producer}</div>
+
+          <div class="label">Distributor</div>
+          <div class="value">${distributor}</div>
+
+          <div class="label">Retailer</div>
+          <div class="value">${retailer}</div>
+
+          <div class="label">Current Owner</div>
+          <div class="value">${currentOwner}</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>✅ Status</h3>
+        <div class="card">
+          ${arrived
+            ? `<span class="badge ${inspectionPassed ? "ok" : "err"}">
+                ${inspectionPassed ? "Inspection Passed" : "Inspection Failed"}
+              </span>`
+            : `<span class="badge err">Not yet arrived</span>`
+          }
+        </div>
+      </div>
     `;
+
+    /* SENSOR DATA */
+    html += `<div class="section"><h3>🌡 Sensor Data</h3>`;
+    if (sensors.length === 0) {
+      html += `<div class="card"><p>No sensor data recorded.</p></div>`;
+    } else {
+      sensors.forEach((s, i) => {
+        html += `
+          <div class="card">
+            <div class="label">Record #${i + 1}</div>
+            <div>Temperature: <b>${s.temperature} °C</b></div>
+            <div>Humidity: <b>${s.humidity} %</b></div>
+            <div>Location: <b>${s.location}</b></div>
+            <div>Time: ${new Date(s.timestamp * 1000).toLocaleString()}</div>
+            <div class="label">Transporter</div>
+            <div class="value">${s.transporter}</div>
+          </div>
+        `;
+      });
+    }
+    html += `</div>`;
+
+    /* OWNERSHIP HISTORY */
+    html += `<div class="section"><h3>🔄 Ownership History</h3>`;
+    ownerships.forEach((o, i) => {
+      html += `
+        <div class="card">
+          <div class="label">Step ${i + 1}</div>
+          <div>From: <b>${o.from}</b></div>
+          <div>To: <b>${o.to}</b></div>
+          <div>Time: ${new Date(o.timestamp * 1000).toLocaleString()}</div>
+        </div>
+      `;
+    });
+    html += `</div>`;
+
+    content.innerHTML = html;
+
   } catch (e) {
-    out.innerText = "❌ Error: " + (e.reason || e.message);
+    content.innerHTML =
+      "<p class='badge err'>❌ Unable to load batch data. The batch may not exist.</p>";
   }
 })();
 </script>
