@@ -9,6 +9,7 @@
 
 <style>
 * { box-sizing: border-box; }
+
 body {
   margin: 0;
   font-family: Arial, sans-serif;
@@ -50,11 +51,34 @@ h1 { margin-top: 0; font-size: 22px; }
 .ok { background: #e6f7ec; color: #1f7a3f; }
 .err { background: #fde8e8; color: #8a1f1f; }
 
+button {
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  background: #111;
+  color: #fff;
+  font-size: 15px;
+}
+
 .footer {
   margin-top: 30px;
   text-align: center;
   font-size: 12px;
   color: #888;
+}
+
+/* 🖨 PRINT ONLY RECEIPT */
+@media print {
+  body * { visibility: hidden; }
+  #receipt, #receipt * { visibility: visible; }
+  #receipt {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+  button { display: none; }
 }
 </style>
 </head>
@@ -62,6 +86,7 @@ h1 { margin-top: 0; font-size: 22px; }
 <body>
 
 <div class="container">
+
   <h1> FreshChain – Product Traceability</h1>
   <p class="label">Blockchain-verified supply chain information</p>
 
@@ -70,6 +95,7 @@ h1 { margin-top: 0; font-size: 22px; }
   <div class="footer">
     Powered by Ethereum (Sepolia) · FreshChain
   </div>
+
 </div>
 
 <script>
@@ -86,10 +112,11 @@ const batchId = params.get("batchId");
 const content = document.getElementById("content");
 
 if (!batchId) {
-  content.innerHTML = "<span class='badge err'>❌ No batch ID provided.</span>";
+  content.innerHTML = "<span class='badge err'>❌ No batch ID provided in QR.</span>";
   throw new Error("No batchId");
 }
 
+/* ================= LOAD DATA ================= */
 (async () => {
   try {
     const provider = new ethers.providers.JsonRpcProvider(RPC);
@@ -97,6 +124,7 @@ if (!batchId) {
 
     const b = await contract.getBatchHistory(batchId);
 
+    // Decode returned tuple (ethers v5 = arrays)
     const id = b[0];
     const product = b[1];
     const qty = b[2];
@@ -133,6 +161,20 @@ if (!batchId) {
               </span>`
             : `<span class="badge err">Not Arrived</span>`
         }
+      </div>
+
+      <!--  RECEIPT -->
+      <div class="section" id="receipt">
+        <h3> Printable QR Receipt</h3>
+        <div class="card" style="text-align:center">
+          <div id="receiptQR"></div>
+          <p><b>Batch ID:</b> ${id}</p>
+          <p><b>Product:</b> ${product}</p>
+          <p><b>Status:</b> ${
+            arrived ? (passed ? "Inspection Passed" : "Inspection Failed") : "Not Arrived"
+          }</p>
+          <button onclick="printReceipt()">🖨 Print / Save as PDF</button>
+        </div>
       </div>
 
       <div class="section">
@@ -173,11 +215,25 @@ if (!batchId) {
     html += `</div>`;
     content.innerHTML = html;
 
+    // Generate QR for receipt
+    generateReceiptQR();
+
   } catch (e) {
     content.innerHTML =
       "<span class='badge err'>❌ Failed to load batch. Batch may not exist.</span>";
   }
 })();
+
+/* ================= RECEIPT FUNCTIONS ================= */
+function generateReceiptQR() {
+  const url = window.location.href;
+  document.getElementById("receiptQR").innerHTML =
+    `<img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}" />`;
+}
+
+function printReceipt() {
+  window.print();
+}
 </script>
 
 </body>
