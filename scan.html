@@ -16,7 +16,7 @@ body {
 }
 
 .container {
-  max-width: 800px;
+  max-width: 850px;
   margin: auto;
   background: #ffffff;
   padding: 24px;
@@ -39,6 +39,21 @@ body {
   font-size: 14px;
 }
 
+/* STATUS (NO BOX) */
+.status-line {
+  font-size: 15px;
+  font-weight: bold;
+  margin: 4px 0;
+}
+
+.status-yes {
+  color: #1b8a3b;
+}
+
+.status-no {
+  color: #c0392b;
+}
+
 button {
   width: 100%;
   padding: 14px;
@@ -54,6 +69,7 @@ button:hover {
   background: #444;
 }
 
+/* PRINT */
 @media print {
   button { display: none; }
   body { background: white; }
@@ -67,32 +83,37 @@ button:hover {
 <div class="container">
   <h2>FreshChain – Product Traceability Report</h2>
 
+  <!-- PRODUCT INFO -->
   <div class="section">
-    <h3>📦 Product Info</h3>
-    <div class="box" id="productInfo">Loading...</div>
+    <h3> Product Info</h3>
+    <div class="box" id="productInfo"></div>
   </div>
 
+  <!-- PARTICIPANTS -->
   <div class="section">
-    <h3>👥 Participants</h3>
+    <h3> Participants</h3>
     <div class="box" id="participants"></div>
   </div>
 
+  <!-- STATUS (NO BOX) -->
   <div class="section">
-    <h3>✅ Status</h3>
-    <div class="box" id="status"></div>
+    <h3> Status</h3>
+    <div id="status"></div>
   </div>
 
+  <!-- SENSOR DATA -->
   <div class="section">
-    <h3>🌡️ Sensor Data</h3>
+    <h3> Sensor Data</h3>
     <div class="box" id="sensorData"></div>
   </div>
 
+  <!-- OWNERSHIP -->
   <div class="section">
-    <h3>🔁 Ownership History</h3>
+    <h3> Ownership History</h3>
     <div class="box" id="ownership"></div>
   </div>
 
-  <button onclick="window.print()">🖨️ Print / Download PDF</button>
+  <button onclick="window.print()">Print / Download PDF</button>
 </div>
 
 <script>
@@ -104,41 +125,43 @@ const ABI = [
   "function getBatchHistory(uint256) view returns (uint256,string,uint256,address,address,address,address,bool,bool,(int256,int256,string,uint256,address)[],(address,address,uint256)[])"
 ];
 
-/* ================= LOAD ================= */
 const params = new URLSearchParams(window.location.search);
 const batchId = params.get("batchId");
 
 async function loadHistory() {
   if (!batchId) {
-    alert("❌ No batchId provided in URL");
+    alert("No batchId provided in URL");
     return;
   }
 
   const provider = new ethers.providers.JsonRpcProvider(RPC);
   const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
-
   const b = await contract.getBatchHistory(batchId);
 
-  /* ===== PRODUCT INFO ===== */
+  /* PRODUCT */
   productInfo.innerText =
 `Batch ID: ${b[0]}
 Product: ${b[1]}
 Quantity: ${b[2]}`;
 
-  /* ===== PARTICIPANTS ===== */
+  /* PARTICIPANTS */
   participants.innerText =
 `Producer: ${b[3]}
 Distributor: ${b[4]}
 Retailer: ${b[5]}
 Current Owner: ${b[6]}`;
 
-  /* ===== STATUS (BULLETPROOF) ===== */
-  let statusText = "";
-  statusText += "Arrived: " + (b[7] ? "YES" : "NO") + "\n";
-  statusText += "Inspection Passed: " + (b[8] ? "YES" : "NO");
-  status.innerText = statusText;
+  /* STATUS (CLEAN, NO BOX) */
+  status.innerHTML = `
+    <div class="status-line ${b[7] ? "status-yes" : "status-no"}">
+      ${b[7] ? "🟢 Arrived" : "🔴 Not Arrived"}
+    </div>
+    <div class="status-line ${b[8] ? "status-yes" : "status-no"}">
+      ${b[8] ? "✅ Inspection Passed" : "❌ Inspection Failed"}
+    </div>
+  `;
 
-  /* ===== SENSOR DATA ===== */
+  /* SENSOR DATA */
   if (b[9].length === 0) {
     sensorData.innerText = "No sensor data recorded.";
   } else {
@@ -152,17 +175,13 @@ Transporter: ${s[4]}`
     ).join("\n\n");
   }
 
-  /* ===== OWNERSHIP HISTORY ===== */
-  if (b[10].length === 0) {
-    ownership.innerText = "No ownership transfers.";
-  } else {
-    ownership.innerText = b[10].map((o, i) =>
+  /* OWNERSHIP */
+  ownership.innerText = b[10].map((o, i) =>
 `Step ${i + 1}
 From: ${o[0]}
 To: ${o[1]}
 Time: ${new Date(Number(o[2]) * 1000).toLocaleString()}`
-    ).join("\n\n");
-  }
+  ).join("\n\n");
 }
 
 loadHistory();
