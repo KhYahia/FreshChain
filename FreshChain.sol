@@ -6,18 +6,23 @@ contract FreshChain {
 
     constructor() {
         owner = msg.sender;
+
+        // OPTIONAL: make the deployer a producer so demo seeding is possible
+        isProducer[msg.sender] = true;
+
+        // OPTIONAL demo batches (turn off if you don't want)
+        bool SEED_DEMO = true;
+        if (SEED_DEMO) {
+            _createBatchInternal(1, "Demo Apples", 100, msg.sender);
+            _createBatchInternal(2, "Demo Milk", 50, msg.sender);
+            _createBatchInternal(3, "Demo Carrots", 200, msg.sender);
+        }
     }
 
     modifier onlyOwner() {
-        require(msg.sender == owner, "Only admin");
+        require(msg.sender == owner, "Only owner");
         _;
     }
-
-    // ---- ROLES ----
-    mapping(address => bool) public isProducer;
-    mapping(address => bool) public isTransporter;
-    mapping(address => bool) public isDistributor;
-    mapping(address => bool) public isRetailer;
 
     modifier onlyProducer() {
         require(isProducer[msg.sender], "Only producer");
@@ -39,7 +44,12 @@ contract FreshChain {
         _;
     }
 
-    // ---- REGISTRATION ----
+    /* ---------- ROLES ---------- */
+    mapping(address => bool) public isProducer;
+    mapping(address => bool) public isTransporter;
+    mapping(address => bool) public isDistributor;
+    mapping(address => bool) public isRetailer;
+
     function registerProducer(address a) external onlyOwner {
         isProducer[a] = true;
     }
@@ -56,74 +66,87 @@ contract FreshChain {
         isRetailer[a] = true;
     }
 
-    // ---- DATA STRUCTURES ----
+    /* ---------- DATA STRUCTURES ---------- */
+
     struct SensorData {
-        int temperature;
-        int humidity;
+        int256 temperature;
+        int256 humidity;
         string location;
-        uint timestamp;
+        uint256 timestamp;
         address transporter;
     }
 
     struct Ownership {
         address from;
         address to;
-        uint timestamp;
+        uint256 timestamp;
     }
 
     struct Batch {
-        uint batchId;
+        uint256 batchId;
         string productName;
-        uint quantity;
+        uint256 quantity;
+        address producer;
         address currentOwner;
+        address distributor;
+        address retailer;
         bool arrived;
         bool inspectionPassed;
+        bool exists;
         SensorData[] sensors;
         Ownership[] ownerships;
-        bool exists;
     }
 
-    mapping(uint => Batch) private batches;
+    mapping(uint256 => Batch) public batches;
 
-    // ---- EVENTS ----
-    event BatchCreated(uint batchId, string product, uint quantity);
-    event SensorAdded(uint batchId, int temp, int hum, string location);
-    event OwnershipTransferred(uint batchId, address from, address to);
-    event Arrived(uint batchId, bool passed);
+    // ✅ NEW: store all batch IDs so we can list them
+    uint256[] private batchIds;
 
-    // ---- FUNCTIONS ----
+    function listBatches() external view returns (uint256[] memory) {
+        return batchIds;
+    }
+
+    /* ---------- PRODUCER ---------- */
+
     function createBatch(
-        uint batchId,
-        string memory productName,
-        uint quantity
+        uint256 batchId,
+        string calldata productName,
+        uint256 quantity
     ) external onlyProducer {
         require(!batches[batchId].exists, "Batch exists");
+        _createBatchInternal(batchId, productName, quantity, msg.sender);
+    }
 
+    function _createBatchInternal(
+        uint256 batchId,
+        string memory productName,
+        uint256 quantity,
+        address producerAddr
+    ) internal {
         Batch storage b = batches[batchId];
         b.batchId = batchId;
         b.productName = productName;
         b.quantity = quantity;
-        b.currentOwner = msg.sender;
+        b.producer = producerAddr;
+        b.currentOwner = producerAddr;
         b.exists = true;
 
-        b.ownerships.push(Ownership(address(0), msg.sender, block.timestamp));
+        batchIds.push(batchId);
 
-        emit BatchCreated(batchId, productName, quantity);
+        b.ownerships.push(Ownership(address(0), producerAddr, block.timestamp));
     }
 
+    /* ---------- TRANSPORTER ---------- */
+
     function addSensorData(
-        uint batchId,
-        int temperature,
-        int humidity,
-        string memory location
+        uint256 batchId,
+        int256 temperature,
+        int256 humidity,
+        string calldata location
     ) external onlyTransporter {
-        require(temperature >= -10 && temperature <= 40, "Bad temp");
-        require(humidity >= 0 && humidity <= 40, "Bad humidity");
+        require(batches[batchId].exists, "No batch");
 
-        Batch storage b = batches[batchId];
-        require(b.exists, "No batch");
-
-        b.sensors.push(
+        batches[batchId].sensors.push(
             SensorData(
                 temperature,
                 humidity,
@@ -132,41 +155,73 @@ contract FreshChain {
                 msg.sender
             )
         );
-
-        emit SensorAdded(batchId, temperature, humidity, location);
     }
 
-    function transferOwnership(uint batchId, address newOwner) external {
-        Batch storage b = batches[batchId];
-        require(b.exists, "No batch");
-        require(msg.sender == b.currentOwner, "Not owner");
+    /* ---------- DISTRIBUTOR ---------- */
 
-        address old = b.currentOwner;
+    function transferOwnership(
+        uint256 batchId,
+        address newOwner
+    ) external onlyDistributor {
+        require(batches[batchId].exists, "No batch");
+
+        Batch storage b = batches[batchId];
+        address oldOwner = b.currentOwner;
         b.currentOwner = newOwner;
+        b.distributor = msg.sender;
 
-        b.ownerships.push(Ownership(old, newOwner, block.timestamp));
-        emit OwnershipTransferred(batchId, old, newOwner);
+        b.ownerships.push(Ownership(oldOwner, newOwner, block.timestamp));
     }
 
-    function markAsArrived(uint batchId, bool passed) external onlyRetailer {
-        Batch storage b = batches[batchId];
-        require(b.exists, "No batch");
+    /* ---------- RETAILER ---------- */
 
+    function markAsArrived(
+        uint256 batchId,
+        bool passed
+    ) external onlyRetailer {
+        require(batches[batchId].exists, "No batch");
+
+        Batch storage b = batches[batchId];
         b.arrived = true;
         b.inspectionPassed = passed;
-
-        emit Arrived(batchId, passed);
+        b.retailer = msg.sender;
     }
 
-    // ---- CUSTOMER VIEW ----
-    function getBatchHistory(uint batchId)
+    /* ---------- VIEW (SCAN) ---------- */
+
+    function getBatchHistory(uint256 batchId)
         external
         view
         returns (
-            Batch memory
+            uint256,
+            string memory,
+            uint256,
+            address,
+            address,
+            address,
+            address,
+            bool,
+            bool,
+            SensorData[] memory,
+            Ownership[] memory
         )
     {
         require(batches[batchId].exists, "No batch");
-        return batches[batchId];
+
+        Batch storage b = batches[batchId];
+
+        return (
+            b.batchId,
+            b.productName,
+            b.quantity,
+            b.producer,
+            b.distributor,
+            b.retailer,
+            b.currentOwner,
+            b.arrived,
+            b.inspectionPassed,
+            b.sensors,
+            b.ownerships
+        );
     }
 }
