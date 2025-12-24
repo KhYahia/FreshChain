@@ -89,19 +89,21 @@ label {
 <div class="sidebar">
   <h2>FreshChain</h2>
 
-  <button onclick="connect()"> Connect Wallet</button>
-  <button onclick="disconnect()"> Disconnect Wallet</button>
+  <button onclick="connect()">🔌 Connect Wallet</button>
+  <button onclick="disconnect()">🔓 Disconnect Wallet</button>
 
   <div id="account">Not connected</div>
   <div id="role">Role: -</div>
 
   <hr>
-  <button onclick="openPanel('admin')">Admin</button>
-  <button onclick="openPanel('producer')">Producer</button>
-  <button onclick="openPanel('transporter')">Transporter</button>
-  <button onclick="openPanel('distributor')">Distributor</button>
-  <button onclick="openPanel('retailer')">Retailer</button>
-  <button onclick="openPanel('customer')">Customer</button>
+
+  <!-- SIDEBAR BUTTONS (ROLE-BASED) -->
+  <button id="btnAdmin" onclick="openPanel('admin')" class="hidden">Admin</button>
+  <button id="btnProducer" onclick="openPanel('producer')" class="hidden">Producer</button>
+  <button id="btnTransporter" onclick="openPanel('transporter')" class="hidden">Transporter</button>
+  <button id="btnDistributor" onclick="openPanel('distributor')" class="hidden">Distributor</button>
+  <button id="btnRetailer" onclick="openPanel('retailer')" class="hidden">Retailer</button>
+  <button id="btnCustomer" onclick="openPanel('customer')">Customer</button>
 </div>
 
 <!-- MAIN -->
@@ -220,17 +222,13 @@ function openPanel(id) {
 }
 
 async function connect() {
-  if (!window.ethereum) {
-    alert("MetaMask not found");
-    return;
-  }
   const provider = new ethers.providers.Web3Provider(window.ethereum);
   await provider.send("eth_requestAccounts", []);
   signer = provider.getSigner();
   user = await signer.getAddress();
   contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
   account.innerText = user;
-  await detectRole();
+  await applyRoleUI();
   show("✅ Wallet connected", "ok");
 }
 
@@ -240,19 +238,56 @@ function disconnect() {
   user = null;
   account.innerText = "Not connected";
   role.innerText = "Role: -";
-  status.innerHTML = "";
   document.querySelectorAll(".card").forEach(c => c.classList.add("hidden"));
-  show("🔓 Wallet disconnected. You can connect another account.", "ok");
+  document.querySelectorAll(".sidebar button").forEach(b => b.classList.add("hidden"));
+  btnCustomer.classList.remove("hidden");
+  show("🔓 Wallet disconnected", "ok");
 }
 
-async function detectRole() {
+async function applyRoleUI() {
+  // Hide all buttons first
+  btnAdmin.classList.add("hidden");
+  btnProducer.classList.add("hidden");
+  btnTransporter.classList.add("hidden");
+  btnDistributor.classList.add("hidden");
+  btnRetailer.classList.add("hidden");
+
   let roles = [];
-  if (await contract.owner() === user) roles.push("Admin");
-  if (await contract.isProducer(user)) roles.push("Producer");
-  if (await contract.isTransporter(user)) roles.push("Transporter");
-  if (await contract.isDistributor(user)) roles.push("Distributor");
-  if (await contract.isRetailer(user)) roles.push("Retailer");
+
+  if (await contract.owner() === user) {
+    roles.push("Admin");
+    btnAdmin.classList.remove("hidden");
+    btnProducer.classList.remove("hidden");
+    btnTransporter.classList.remove("hidden");
+    btnDistributor.classList.remove("hidden");
+    btnRetailer.classList.remove("hidden");
+  }
+  if (await contract.isProducer(user)) {
+    roles.push("Producer");
+    btnProducer.classList.remove("hidden");
+  }
+  if (await contract.isTransporter(user)) {
+    roles.push("Transporter");
+    btnTransporter.classList.remove("hidden");
+  }
+  if (await contract.isDistributor(user)) {
+    roles.push("Distributor");
+    btnDistributor.classList.remove("hidden");
+  }
+  if (await contract.isRetailer(user)) {
+    roles.push("Retailer");
+    btnRetailer.classList.remove("hidden");
+  }
+
   role.innerText = "Role: " + (roles.length ? roles.join(" / ") : "-");
+
+  // Open the first available role panel
+  if (roles.includes("Admin")) openPanel("admin");
+  else if (roles.includes("Producer")) openPanel("producer");
+  else if (roles.includes("Transporter")) openPanel("transporter");
+  else if (roles.includes("Distributor")) openPanel("distributor");
+  else if (roles.includes("Retailer")) openPanel("retailer");
+  else openPanel("customer");
 }
 
 async function send(fn) {
@@ -287,8 +322,6 @@ function generateQR() {
 
   qrlink.innerText = url;
 }
-
-openPanel("producer");
 </script>
 
 </body>
