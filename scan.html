@@ -92,12 +92,12 @@ h1 { margin-top: 0; font-size: 22px; }
 <body>
 
 <div class="container" id="printArea">
-  <h1>📦 FreshChain – Product Traceability</h1>
+  <h1> FreshChain – Product Traceability</h1>
   <p class="label">Blockchain-verified supply chain information</p>
 
   <div id="content">⏳ Loading product data…</div>
 
-  <button class="print-btn" onclick="window.print()">🖨️ Print / Download PDF</button>
+  <button class="print-btn" onclick="window.print()"> Print / Download PDF</button>
 
   <div class="footer">
     Powered by Ethereum (Sepolia) · FreshChain
@@ -149,7 +149,7 @@ if (!batchId) {
       </div>
 
       <div class="section card">
-        <h3>👥 Participants</h3>
+        <h3> Participants</h3>
         <div><b>Producer:</b> ${producer}</div>
         <div><b>Distributor:</b> ${distributor}</div>
         <div><b>Retailer:</b> ${retailer}</div>
@@ -157,7 +157,7 @@ if (!batchId) {
       </div>
 
       <div class="section card">
-        <h3>✅ Status</h3>
+        <h3> Status</h3>
         ${
           arrived
             ? `<span class="badge ${passed ? "ok" : "err"}">
@@ -189,7 +189,7 @@ if (!batchId) {
       });
     }
 
-    html += `<div class="section"><h3>🔄 Ownership History</h3>`;
+    html += `<div class="section"><h3> Ownership History</h3>`;
 
     ownerships.forEach((o, i) => {
       html += `
