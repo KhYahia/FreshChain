@@ -25,14 +25,9 @@ body {
   box-shadow: 0 10px 25px rgba(0,0,0,0.08);
 }
 
-h1 {
-  margin-top: 0;
-  font-size: 22px;
-}
+h1 { margin-top: 0; font-size: 22px; }
 
-.section {
-  margin-top: 20px;
-}
+.section { margin-top: 20px; }
 
 .card {
   background: #fafafa;
@@ -42,14 +37,8 @@ h1 {
   margin-top: 10px;
 }
 
-.label {
-  font-size: 13px;
-  color: #666;
-}
-.value {
-  font-weight: bold;
-  word-break: break-all;
-}
+.label { font-size: 13px; color: #666; }
+.value { font-weight: bold; word-break: break-all; }
 
 .badge {
   display: inline-block;
@@ -60,14 +49,6 @@ h1 {
 }
 .ok { background: #e6f7ec; color: #1f7a3f; }
 .err { background: #fde8e8; color: #8a1f1f; }
-
-pre {
-  white-space: pre-wrap;
-  font-size: 13px;
-  background: #f2f2f2;
-  padding: 12px;
-  border-radius: 10px;
-}
 
 .footer {
   margin-top: 30px;
@@ -81,18 +62,14 @@ pre {
 <body>
 
 <div class="container">
-
   <h1>📦 FreshChain – Product Traceability</h1>
   <p class="label">Blockchain-verified supply chain information</p>
 
-  <div id="content">
-    <p>⏳ Loading product data from blockchain…</p>
-  </div>
+  <div id="content">⏳ Loading product data…</div>
 
   <div class="footer">
     Powered by Ethereum (Sepolia) · FreshChain
   </div>
-
 </div>
 
 <script>
@@ -109,7 +86,7 @@ const batchId = params.get("batchId");
 const content = document.getElementById("content");
 
 if (!batchId) {
-  content.innerHTML = "<p class='err badge'>❌ No batch ID provided in QR code.</p>";
+  content.innerHTML = "<span class='badge err'>❌ No batch ID provided.</span>";
   throw new Error("No batchId");
 }
 
@@ -120,104 +97,85 @@ if (!batchId) {
 
     const b = await contract.getBatchHistory(batchId);
 
-    const [
-      id,
-      productName,
-      quantity,
-      producer,
-      distributor,
-      retailer,
-      currentOwner,
-      arrived,
-      inspectionPassed,
-      sensors,
-      ownerships
-    ] = b;
+    const id = b[0];
+    const product = b[1];
+    const qty = b[2];
+    const producer = b[3];
+    const distributor = b[4];
+    const retailer = b[5];
+    const owner = b[6];
+    const arrived = b[7];
+    const passed = b[8];
+    const sensors = b[9];
+    const ownerships = b[10];
 
     let html = `
-      <div class="section">
-        <div class="card">
-          <div class="label">Batch ID</div>
-          <div class="value">${id}</div>
-
-          <div class="label">Product</div>
-          <div class="value">${productName}</div>
-
-          <div class="label">Quantity</div>
-          <div class="value">${quantity}</div>
-        </div>
+      <div class="section card">
+        <div class="label">Batch ID</div><div class="value">${id}</div>
+        <div class="label">Product</div><div class="value">${product}</div>
+        <div class="label">Quantity</div><div class="value">${qty}</div>
       </div>
 
-      <div class="section">
+      <div class="section card">
         <h3>👥 Participants</h3>
-        <div class="card">
-          <div class="label">Producer</div>
-          <div class="value">${producer}</div>
+        <div><b>Producer:</b> ${producer}</div>
+        <div><b>Distributor:</b> ${distributor}</div>
+        <div><b>Retailer:</b> ${retailer}</div>
+        <div><b>Current Owner:</b> ${owner}</div>
+      </div>
 
-          <div class="label">Distributor</div>
-          <div class="value">${distributor}</div>
-
-          <div class="label">Retailer</div>
-          <div class="value">${retailer}</div>
-
-          <div class="label">Current Owner</div>
-          <div class="value">${currentOwner}</div>
-        </div>
+      <div class="section card">
+        <h3>✅ Status</h3>
+        ${
+          arrived
+            ? `<span class="badge ${passed ? "ok" : "err"}">
+                ${passed ? "Inspection Passed" : "Inspection Failed"}
+              </span>`
+            : `<span class="badge err">Not Arrived</span>`
+        }
       </div>
 
       <div class="section">
-        <h3>✅ Status</h3>
-        <div class="card">
-          ${arrived
-            ? `<span class="badge ${inspectionPassed ? "ok" : "err"}">
-                ${inspectionPassed ? "Inspection Passed" : "Inspection Failed"}
-              </span>`
-            : `<span class="badge err">Not yet arrived</span>`
-          }
-        </div>
-      </div>
+        <h3>🌡 Sensor Data</h3>
     `;
 
-    /* SENSOR DATA */
-    html += `<div class="section"><h3>🌡 Sensor Data</h3>`;
     if (sensors.length === 0) {
-      html += `<div class="card"><p>No sensor data recorded.</p></div>`;
+      html += `<div class="card">No sensor data recorded.</div>`;
     } else {
       sensors.forEach((s, i) => {
         html += `
           <div class="card">
-            <div class="label">Record #${i + 1}</div>
-            <div>Temperature: <b>${s.temperature} °C</b></div>
-            <div>Humidity: <b>${s.humidity} %</b></div>
-            <div>Location: <b>${s.location}</b></div>
-            <div>Time: ${new Date(s.timestamp * 1000).toLocaleString()}</div>
+            <div><b>Record #${i + 1}</b></div>
+            <div>Temperature: ${s[0]} °C</div>
+            <div>Humidity: ${s[1]} %</div>
+            <div>Location: ${s[2]}</div>
+            <div>Time: ${new Date(Number(s[3]) * 1000).toLocaleString()}</div>
             <div class="label">Transporter</div>
-            <div class="value">${s.transporter}</div>
+            <div class="value">${s[4]}</div>
           </div>
         `;
       });
     }
-    html += `</div>`;
 
-    /* OWNERSHIP HISTORY */
     html += `<div class="section"><h3>🔄 Ownership History</h3>`;
+
     ownerships.forEach((o, i) => {
       html += `
         <div class="card">
-          <div class="label">Step ${i + 1}</div>
-          <div>From: <b>${o.from}</b></div>
-          <div>To: <b>${o.to}</b></div>
-          <div>Time: ${new Date(o.timestamp * 1000).toLocaleString()}</div>
+          <div><b>Step ${i + 1}</b></div>
+          <div>From: ${o[0]}</div>
+          <div>To: ${o[1]}</div>
+          <div>Time: ${new Date(Number(o[2]) * 1000).toLocaleString()}</div>
         </div>
       `;
     });
-    html += `</div>`;
 
+    html += `</div>`;
     content.innerHTML = html;
 
   } catch (e) {
     content.innerHTML =
-      "<p class='badge err'>❌ Unable to load batch data. The batch may not exist.</p>";
+      "<span class='badge err'>❌ Failed to load batch. Batch may not exist.</span>";
   }
 })();
 </script>
