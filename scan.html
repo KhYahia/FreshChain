@@ -50,22 +50,54 @@ h1 { margin-top: 0; font-size: 22px; }
 .ok { background: #e6f7ec; color: #1f7a3f; }
 .err { background: #fde8e8; color: #8a1f1f; }
 
+.print-btn {
+  margin-top: 30px;
+  width: 100%;
+  padding: 14px;
+  font-size: 16px;
+  border: none;
+  border-radius: 12px;
+  background: #222;
+  color: #fff;
+  cursor: pointer;
+}
+.print-btn:hover {
+  background: #444;
+}
+
 .footer {
   margin-top: 30px;
   text-align: center;
   font-size: 12px;
   color: #888;
 }
+
+/* ===== PRINT STYLES ===== */
+@media print {
+  body {
+    background: white;
+    padding: 0;
+  }
+  .container {
+    box-shadow: none;
+    border-radius: 0;
+  }
+  .print-btn {
+    display: none;
+  }
+}
 </style>
 </head>
 
 <body>
 
-<div class="container">
+<div class="container" id="printArea">
   <h1>📦 FreshChain – Product Traceability</h1>
   <p class="label">Blockchain-verified supply chain information</p>
 
   <div id="content">⏳ Loading product data…</div>
+
+  <button class="print-btn" onclick="window.print()">🖨️ Print / Download PDF</button>
 
   <div class="footer">
     Powered by Ethereum (Sepolia) · FreshChain
