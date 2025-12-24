@@ -14,8 +14,6 @@ body {
   display: flex;
   height: 100vh;
 }
-
-/* SIDEBAR */
 .sidebar {
   width: 300px;
   background: #111;
@@ -35,24 +33,14 @@ body {
 }
 .sidebar button:hover { background: #444; }
 
-#account {
-  font-size: 13px;
-  word-break: break-all;
-  color: #ccc;
-}
-#role {
-  margin-top: 6px;
-  color: #9ae6b4;
-}
+#account { font-size: 13px; word-break: break-all; color: #ccc; }
+#role { margin-top: 6px; color: #9ae6b4; }
 
-/* MAIN */
 .main {
   flex: 1;
   padding: 20px;
   overflow-y: auto;
 }
-
-/* CARDS */
 .card {
   max-width: 520px;
   border: 1px solid #ccc;
@@ -60,24 +48,11 @@ body {
   border-radius: 12px;
   margin-bottom: 20px;
 }
-input, button {
-  width: 100%;
-  padding: 12px;
-  margin-top: 6px;
-}
-label {
-  font-size: 14px;
-  margin-top: 10px;
-  display: block;
-}
+input, button { width: 100%; padding: 12px; margin-top: 6px; }
+label { font-size: 14px; margin-top: 10px; display: block; }
 .hidden { display: none; }
 
-/* STATUS */
-.status {
-  padding: 12px;
-  border-radius: 8px;
-  margin-bottom: 12px;
-}
+.status { padding: 12px; border-radius: 8px; margin-bottom: 12px; }
 .ok { background: #e6fffa; color: #065f46; }
 .err { background: #fee2e2; color: #7f1d1d; }
 </style>
@@ -85,28 +60,29 @@ label {
 
 <body>
 
-<!-- SIDEBAR -->
 <div class="sidebar">
   <h2>FreshChain</h2>
 
-  <button onclick="connect()">🔌 Connect Wallet</button>
-  <button onclick="disconnect()">🔓 Disconnect Wallet</button>
+  <!-- CONNECT CONTROLS (ALWAYS VISIBLE) -->
+  <button id="btnConnect" onclick="connect()">🔌 Connect Wallet</button>
+  <button id="btnDisconnect" onclick="disconnect()">🔓 Disconnect Wallet</button>
 
   <div id="account">Not connected</div>
   <div id="role">Role: -</div>
 
   <hr>
 
-  <!-- SIDEBAR BUTTONS (ROLE-BASED) -->
+  <!-- ROLE BUTTONS -->
   <button id="btnAdmin" onclick="openPanel('admin')" class="hidden">Admin</button>
   <button id="btnProducer" onclick="openPanel('producer')" class="hidden">Producer</button>
   <button id="btnTransporter" onclick="openPanel('transporter')" class="hidden">Transporter</button>
   <button id="btnDistributor" onclick="openPanel('distributor')" class="hidden">Distributor</button>
   <button id="btnRetailer" onclick="openPanel('retailer')" class="hidden">Retailer</button>
+
+  <!-- CUSTOMER ALWAYS AVAILABLE -->
   <button id="btnCustomer" onclick="openPanel('customer')">Customer</button>
 </div>
 
-<!-- MAIN -->
 <div class="main">
   <div id="status"></div>
 
@@ -115,25 +91,25 @@ label {
     <h3>Admin – Register Roles</h3>
 
     <label>Producer Address</label>
-    <input id="producerAddr" placeholder="0x Producer address">
+    <input id="producerAddr">
     <button onclick="send(() => contract.registerProducer(producerAddr.value))">
       Register Producer
     </button>
 
     <label>Transporter Address</label>
-    <input id="transporterAddr" placeholder="0x Transporter address">
+    <input id="transporterAddr">
     <button onclick="send(() => contract.registerTransporter(transporterAddr.value))">
       Register Transporter
     </button>
 
     <label>Distributor Address</label>
-    <input id="distributorAddr" placeholder="0x Distributor address">
+    <input id="distributorAddr">
     <button onclick="send(() => contract.registerDistributor(distributorAddr.value))">
       Register Distributor
     </button>
 
     <label>Retailer Address</label>
-    <input id="retailerAddr" placeholder="0x Retailer address">
+    <input id="retailerAddr">
     <button onclick="send(() => contract.registerRetailer(retailerAddr.value))">
       Register Retailer
     </button>
@@ -190,7 +166,6 @@ label {
     <img id="qrimg">
     <p id="qrlink"></p>
   </div>
-
 </div>
 
 <script>
@@ -236,16 +211,25 @@ function disconnect() {
   signer = null;
   contract = null;
   user = null;
+
   account.innerText = "Not connected";
   role.innerText = "Role: -";
+  status.innerHTML = "";
+
+  // Hide role buttons ONLY
+  btnAdmin.classList.add("hidden");
+  btnProducer.classList.add("hidden");
+  btnTransporter.classList.add("hidden");
+  btnDistributor.classList.add("hidden");
+  btnRetailer.classList.add("hidden");
+
   document.querySelectorAll(".card").forEach(c => c.classList.add("hidden"));
-  document.querySelectorAll(".sidebar button").forEach(b => b.classList.add("hidden"));
-  btnCustomer.classList.remove("hidden");
-  show("🔓 Wallet disconnected", "ok");
+  openPanel("customer");
+
+  show("🔓 Wallet disconnected. You can connect again.", "ok");
 }
 
 async function applyRoleUI() {
-  // Hide all buttons first
   btnAdmin.classList.add("hidden");
   btnProducer.classList.add("hidden");
   btnTransporter.classList.add("hidden");
@@ -281,7 +265,6 @@ async function applyRoleUI() {
 
   role.innerText = "Role: " + (roles.length ? roles.join(" / ") : "-");
 
-  // Open the first available role panel
   if (roles.includes("Admin")) openPanel("admin");
   else if (roles.includes("Producer")) openPanel("producer");
   else if (roles.includes("Transporter")) openPanel("transporter");
