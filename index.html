@@ -8,38 +8,84 @@
 <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
 
 <style>
-body { margin:0; font-family:Arial; display:flex; height:100vh; }
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  display: flex;
+  height: 100vh;
+}
+
+/* SIDEBAR */
 .sidebar {
-  width:300px; background:#111; color:#fff; padding:20px;
+  width: 300px;
+  background: #111;
+  color: #fff;
+  padding: 20px;
 }
+.sidebar h2 { margin-top: 0; }
 .sidebar button {
-  width:100%; padding:12px; margin:6px 0;
-  border:none; border-radius:8px;
-  background:#222; color:#fff; cursor:pointer;
+  width: 100%;
+  margin: 6px 0;
+  padding: 12px;
+  background: #222;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
 }
-.sidebar button:hover { background:#444; }
-#account { font-size:13px; word-break:break-all; color:#ccc; }
-#role { margin-top:6px; color:#9ae6b4; }
+.sidebar button:hover { background: #444; }
 
-.main { flex:1; padding:20px; overflow:auto; }
+#account {
+  font-size: 13px;
+  word-break: break-all;
+  color: #ccc;
+}
+#role {
+  margin-top: 6px;
+  color: #9ae6b4;
+}
+
+/* MAIN */
+.main {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+/* CARDS */
 .card {
-  max-width:520px;
-  border:1px solid #ccc;
-  padding:16px;
-  border-radius:12px;
-  margin-bottom:20px;
+  max-width: 520px;
+  border: 1px solid #ccc;
+  padding: 16px;
+  border-radius: 12px;
+  margin-bottom: 20px;
 }
-input, button { width:100%; padding:12px; margin-top:8px; }
-.hidden { display:none; }
+input, button {
+  width: 100%;
+  padding: 12px;
+  margin-top: 6px;
+}
+label {
+  font-size: 14px;
+  margin-top: 10px;
+  display: block;
+}
+.hidden { display: none; }
 
-.status { padding:12px; border-radius:8px; margin-bottom:12px; }
-.ok { background:#e6fffa; color:#065f46; }
-.err { background:#fee2e2; color:#7f1d1d; }
+/* STATUS */
+.status {
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+.ok { background: #e6fffa; color: #065f46; }
+.err { background: #fee2e2; color: #7f1d1d; }
 </style>
 </head>
 
 <body>
 
+<!-- SIDEBAR -->
 <div class="sidebar">
   <h2>FreshChain</h2>
   <button onclick="connect()">🔌 Connect Wallet</button>
@@ -54,17 +100,37 @@ input, button { width:100%; padding:12px; margin-top:8px; }
   <button onclick="openPanel('customer')">Customer</button>
 </div>
 
+<!-- MAIN -->
 <div class="main">
   <div id="status"></div>
 
   <!-- ADMIN -->
   <div id="admin" class="card hidden">
     <h3>Admin – Register Roles</h3>
-    <input id="roleAddr" placeholder="0x address">
-    <button onclick="send(() => contract.registerProducer(roleAddr.value))">Register Producer</button>
-    <button onclick="send(() => contract.registerTransporter(roleAddr.value))">Register Transporter</button>
-    <button onclick="send(() => contract.registerDistributor(roleAddr.value))">Register Distributor</button>
-    <button onclick="send(() => contract.registerRetailer(roleAddr.value))">Register Retailer</button>
+
+    <label>Producer Address</label>
+    <input id="producerAddr" placeholder="0x Producer address">
+    <button onclick="send(() => contract.registerProducer(producerAddr.value))">
+      Register Producer
+    </button>
+
+    <label>Transporter Address</label>
+    <input id="transporterAddr" placeholder="0x Transporter address">
+    <button onclick="send(() => contract.registerTransporter(transporterAddr.value))">
+      Register Transporter
+    </button>
+
+    <label>Distributor Address</label>
+    <input id="distributorAddr" placeholder="0x Distributor address">
+    <button onclick="send(() => contract.registerDistributor(distributorAddr.value))">
+      Register Distributor
+    </button>
+
+    <label>Retailer Address</label>
+    <input id="retailerAddr" placeholder="0x Retailer address">
+    <button onclick="send(() => contract.registerRetailer(retailerAddr.value))">
+      Register Retailer
+    </button>
   </div>
 
   <!-- PRODUCER -->
@@ -118,6 +184,7 @@ input, button { width:100%; padding:12px; margin-top:8px; }
     <img id="qrimg">
     <p id="qrlink"></p>
   </div>
+
 </div>
 
 <script>
@@ -183,14 +250,21 @@ function show(msg, type) {
 }
 
 function generateQR() {
-  const url = location.origin + location.pathname.replace("index.html","") +
+  const url =
+    location.origin +
+    location.pathname.replace("index.html","") +
     "scan.html?batchId=" + qrid.value;
-  qrimg.src = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" +
+
+  qrimg.src =
+    "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" +
     encodeURIComponent(url);
+
   qrlink.innerText = url;
 }
 
 openPanel("producer");
 </script>
+
 </body>
 </html>
+
